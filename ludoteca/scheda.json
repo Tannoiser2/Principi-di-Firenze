@@ -1,0 +1,14 @@
+{
+  "titolo": "I Principi di Firenze",
+  "sottotitolo": "mecenati del Rinascimento",
+  "descrizione": "Aste, edifici, paesaggi e libertà per ospitare artisti e sapienti nel tuo palazzo: tavolo 3D con gli edifici dipinti (o 2D dall'alto), con La Musa e la Principessa, le costruzioni in comune e il solitario contro Wolfgang, contro l'IA o online.",
+  "online": true,
+  "sezione": "conversione",
+  "ordine": 187,
+  "gioca": "https://tannoiser2.github.io/Principi-di-Firenze/",
+  "bgg": 555,
+  "generi": [
+    "Gestionali",
+    "Aste"
+  ]
+}
