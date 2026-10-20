@@ -7,10 +7,40 @@ extends RefCounted
 const D = preload("res://scripts/data/pf_data.gd")
 
 var level := 1
+var flags := {"draw": true, "prest": false, "pickwork": true, "freeval": true}
 var rng := RandomNumberGenerator.new()
 
 
+var _leveled := false
+
+
+## I livelli: facile senza pianificazione e con qualche distrazione, normale senza i calcoli
+## più fini, esperto con tutto.
+func _apply_level() -> void:
+	_leveled = true
+	if level <= 0:
+		for k in ["prepare", "cross", "draw", "sellfame", "needs"]:
+			flags[k] = false
+		flags["scale"] = 0.85
+		flags["tgt"] = 1.2
+	elif level == 1:
+		for k in ["needs", "draw", "sellfame"]:
+			flags[k] = false
+
+
 func decide(eng: PFEngine, s: int, req: Dictionary):
+	if not _leveled:
+		_apply_level()
+	if level <= 0 and req.get("t", "") == "action" and rng.randf() < 0.3:
+		var m: Dictionary = req["menu"]
+		var opts := []
+		for a in ["prof", "bonus"]:
+			if m.has(a) and m.get("left", 0) > 0:
+				opts.append({"a": a})
+		if m.has("freedom") and m.get("left", 0) > 0:
+			opts.append({"a": "freedom", "f": m["freedom"][rng.randi() % m["freedom"].size()]})
+		if not opts.is_empty():
+			return opts[rng.randi() % opts.size()]
 	match req.get("t", ""):
 		"draft":
 			return _draft(eng, s, req["cards"])
@@ -127,16 +157,56 @@ func object_value(eng: PFEngine, s: int, obj: String) -> float:
 			for l in D.LANDS:
 				if st.supply["land"][l] > 0:
 					v = maxf(v, object_value(eng, s, l))
-		"prestigio":
+		"prestigio" when not flags.get("prest", false):
 			v = 500.0 + 30.0 * r
+		"prestigio":
+			var hopes := []
+			for pid in st.prest_deck:
+				hopes.append(_prestige_hope(eng, s, pid))
+			hopes.sort()
+			hopes.reverse()
+			var top := 0.0
+			for i in mini(3, hopes.size()):
+				top += hopes[i]
+			top /= maxf(1.0, float(mini(3, hopes.size())))
+			v = top * 170.0 + 60.0
 		"reclutamento":
 			var targets := eng.recruit_targets(s)
 			v = e * 100.0 + (450.0 if not targets.is_empty() else 150.0)
+	v *= float(flags.get("scale", 0.6))
+	if flags.get("cross", true) and obj in ["bosco", "lago", "parco", "giullare", "reclutamento"]:
+		v += _cross_bonus(eng, s, obj)
 	if level == 0:
 		v *= 0.75
 	elif level == 2:
 		v *= 1.05
 	return v
+
+
+## Se l'oggetto fa arrivare una carta in mano al minimo del round, vale molto di più
+func _cross_bonus(eng: PFEngine, s: int, obj: String) -> float:
+	var st: PFState = eng.st
+	var p: Dictionary = st.players[s]
+	var mn := st.min_work()
+	var before := -99
+	var after := -99
+	for c in p["hand"]:
+		var v := st.work_value(s, c, p["bonus"])
+		before = maxi(before, v)
+		var w := v
+		if obj in D.LANDS and D.PROFS[c]["land"] == obj and p["land"][obj] == 0:
+			w += 3
+		elif obj == "giullare":
+			w += 2
+		elif obj == "reclutamento":
+			w += 1
+		after = maxi(after, w)
+	# con un'azione di miglioramento (libertà o edificio) si guadagnano ancora 3-4 punti
+	if before + 4 < mn and after + 4 >= mn:
+		return 650.0
+	if before < mn and after >= mn:
+		return 800.0
+	return 0.0
 
 
 ## Fiorini da tenere da parte per la fase azioni
@@ -170,6 +240,8 @@ func _open(eng: PFEngine, s: int, req: Dictionary):
 func _bid(eng: PFEngine, s: int, req: Dictionary) -> bool:
 	var v := object_value(eng, s, req["obj"])
 	var cap := float(eng.st.players[s]["money"]) * (0.4 if eng.st.round <= 5 else 0.6)
+	if eng.st.round == D.ROUNDS:
+		cap = float(eng.st.players[s]["money"]) - 300.0
 	var lim := minf(minf(v * (0.8 if level == 0 else 0.92), float(_budget(eng, s))), cap)
 	if level == 0:
 		lim -= rng.randf_range(0.0, 200.0)
@@ -247,6 +319,9 @@ func _pick(eng: PFEngine, s: int, kind: String, cards: Array) -> int:
 				v = st.bonus_value(s, c, true) + 0.1 * rng.randf()
 			_:
 				v = card_potential(eng, s, c) + 0.1 * rng.randf()
+				var now := st.work_value(s, c, st.players[s]["bonus"]) + 1
+				if flags["pickwork"] and eng.st.phase == "azioni" and now >= st.min_work():
+					v += 6.0 + 0.5 * now
 		if v > bv:
 			bv = v
 			best = c
@@ -409,24 +484,123 @@ func _action(eng: PFEngine, s: int, m: Dictionary) -> Dictionary:
 	if left <= 0:
 		return {"a": "end"}
 	var cards_left: int = p["hand"].size() + p["recruits"]
-	var want_work := worked == 0 or cards_left > r - 1 or r == 1
+	var want_work: bool = (worked == 0 or cards_left > r - 1 or r == 1 or bool(flags.get("greedy", true))) and worked < 2
 	if want_work:
 		var plan := _work_plan(eng, s, m, left)
 		if not plan.is_empty():
 			if plan["steps"].is_empty():
 				return plan["work"]
 			return plan["steps"][0]
+		# nessuna carta basta: si pesca sperando in una carta adatta, se poi resta un'azione per l'opera
+		if flags["draw"] and m.has("prof") and left >= 2 and p["money"] >= 300 and _draw_chance(eng, s) >= 0.45:
+			return {"a": "prof"}
 	# niente opera possibile: carte e miglioramenti per i round futuri
-	if m.has("prof") and p["hand"].size() < r + (1 if worked == 0 else 0) and (r > 1 or left >= 2):
+	if m.has("prof") and p["hand"].size() < r + (1 if worked == 0 else 0) + (1 if flags.get("moreprof", false) else 0) and (r > 1 or left >= 2):
 		return {"a": "prof"}
+	if flags.get("prepare", true) and r >= 2:
+		var prep := _prepare(eng, s, m)
+		if not prep.is_empty():
+			return prep
 	var imp := _improvement(eng, s, m, false)
 	if not imp.is_empty():
 		return imp
 	if m.has("prof") and p["hand"].size() <= r and r >= 2 and p["money"] >= 700:
 		return {"a": "prof"}
+	# ultimo round: i fiorini non servono più, un edificio vale 3 punti
+	if r == 1 and m.has("build") and flags.get("lastbuild", true):
+		for b in m["build"]:
+			var pl := best_place(eng, s, "b", b)
+			if not pl.is_empty():
+				return {"a": "build", "b": b, "pl": pl, "price": 0}
 	if m.has("bonus") and p["money"] >= 900 and r >= 2 and p["bonus"].size() < 2:
 		return {"a": "bonus"}
 	return {"a": "end"}
+
+
+## Preparazione del prossimo round: l'azione che avvicina di più una carta in mano al minimo
+## del round successivo (libertà, edificio, carta Bonus), tenendo conto del costo.
+func _prepare(eng: PFEngine, s: int, m: Dictionary) -> Dictionary:
+	var st: PFState = eng.st
+	var p: Dictionary = st.players[s]
+	if p["hand"].is_empty():
+		return {}
+	var nmin: int = D.MIN_WORK[mini(st.round + 1, 7)]
+	var base := {}
+	var before := -99
+	for c in p["hand"]:
+		base[c] = st.work_value(s, c, p["bonus"]) + 1
+		before = maxi(before, base[c])
+	var cands := []
+	if m.has("freedom"):
+		for f in m["freedom"]:
+			cands.append({"act": {"a": "freedom", "f": f}, "cost": 300, "intr": 0.0, "free": f})
+	if m.has("build"):
+		for b in m["build"]:
+			if st.build_cost(s) > 300 and _need(eng, s, "bld", b) == 0:
+				continue
+			cands.append({"act": {"a": "build", "b": b}, "cost": st.build_cost(s), "intr": 600.0, "bld": b})
+	if m.has("bonus") and st.bonus_deck.size() > 0:
+		var vals := []
+		for b in st.bonus_deck:
+			vals.append(st.bonus_value(s, b, true))
+		vals.sort()
+		vals.reverse()
+		var exp := 0.0
+		for i in mini(3, vals.size()):
+			exp += vals[i]
+		exp /= maxf(1.0, float(mini(3, vals.size())))
+		cands.append({"act": {"a": "bonus"}, "cost": 300, "intr": 0.0, "plus": int(round(exp))})
+	var best := {}
+	var bv := 0.0
+	var money: int = p["money"]
+	for cd in cands:
+		if cd["cost"] > money - 300:
+			continue
+		var after := -99
+		for c in p["hand"]:
+			var v: int = base[c]
+			var pr: Dictionary = D.PROFS[c]
+			if cd.has("free") and pr["free"] == cd["free"]:
+				v += 3
+			if cd.has("bld") and pr["bld"] == cd["bld"]:
+				v += 4
+			v += int(cd.get("plus", 0))
+			after = maxi(after, v)
+		var score := float(cd["intr"]) - float(cd["cost"])
+		if after >= nmin and before < nmin:
+			score += 900.0 + float(after) * 50.0
+		else:
+			score += float(after - before) * 60.0
+		if cd.has("free"):
+			score += maxf(0.0, expected_works(eng, s) - float(p["hand"].size())) / 3.0 * 300.0
+		if score > bv:
+			bv = score
+			best = cd["act"]
+	if best.get("a", "") == "build":
+		var pl := best_place(eng, s, "b", best["b"])
+		if pl.is_empty():
+			pl = _coop_place(eng, s, best["b"])
+		if pl.is_empty():
+			return {}
+		best["pl"] = pl
+		best["price"] = 200 if pl.has("side") else 0
+	return best
+
+
+## Probabilità che pescando 5 Professioni ne esca una che si può giocare subito
+func _draw_chance(eng: PFEngine, s: int) -> float:
+	var st: PFState = eng.st
+	var deck: Array = st.prof_deck
+	if deck.is_empty():
+		return 0.0
+	var p: Dictionary = st.players[s]
+	var muse: int = st.round if p["char"] == "musa" else 0
+	var ok := 0
+	for c in deck:
+		if st.work_value(s, c, p["bonus"], muse) + 1 >= st.min_work():
+			ok += 1
+	var q := float(ok) / float(deck.size())
+	return 1.0 - pow(1.0 - q, float(mini(5, deck.size())))
 
 
 ## Il miglior piano per completare un'opera in questo turno: eventuali miglioramenti (libertà, edificio)
@@ -471,7 +645,9 @@ func _work_plan(eng: PFEngine, s: int, m: Dictionary, left: int) -> Dictionary:
 				v += 1
 				cost += 300
 			if cost > money:
-				continue
+				# si può scendere sulla traccia della fama, se l'opera ripaga
+				if not (flags.get("sellfame", true) and st.can_sell_fame() and (cost - money + 99) / 100 <= p["fame"] and (cost - money + 99) / 100 <= v / 2 - 2):
+					continue
 			var use := []
 			for b in bonuses:
 				var bvv := st.bonus_value(s, b, true)
@@ -551,6 +727,8 @@ func _improvement(eng: PFEngine, s: int, m: Dictionary, for_work: bool) -> Dicti
 			var need := _need(eng, s, "bld", b)
 			if for_work and need == 0:
 				continue
+			if flags.get("no700", true) and st.build_cost(s) >= 700 and need == 0 and _rounds_left(eng) > 1:
+				continue
 			var gain := 600.0 + need * 400.0 * minf(1.0, float(r) / 2.0) - float(st.build_cost(s))
 			if 1 in p["prestige"] or 9 in p["prestige"]:
 				gain += 250.0
@@ -572,6 +750,9 @@ func _improvement(eng: PFEngine, s: int, m: Dictionary, for_work: bool) -> Dicti
 			if for_work and need2 == 0:
 				continue
 			var gain2 := need2 * 300.0 * minf(1.0, float(r) / 2.0) + float(r) * 30.0 - 300.0
+			if flags.get("freeval", false):
+				# vale anche per le carte che arriveranno: un terzo degli artisti vuole questa libertà
+				gain2 = (float(need2) + maxf(0.0, expected_works(eng, s) - float(p["hand"].size())) / 3.0) * 300.0 - 300.0
 			if 8 in p["prestige"]:
 				gain2 += 350.0
 			if gain2 > bv:
@@ -626,7 +807,21 @@ func _work_pay(eng: PFEngine, s: int, req: Dictionary) -> int:
 	var target := 1300 if r >= 3 else 1000
 	if r == 2:
 		target = 1100
+	if flags.get("needs", true) and r >= 2:
+		# quanto servirà per migliorare le carte in mano (libertà, edifici mancanti)
+		var need_cash := 300
+		var seen := {}
+		for c in p["hand"]:
+			var pr: Dictionary = D.PROFS[c]
+			if not (pr["free"] in p["freedoms"]) and not seen.has(pr["free"]):
+				seen[pr["free"]] = true
+				need_cash += 300
+			if not (pr["bld"] in p["buildings"]) and not seen.has(pr["bld"]):
+				seen[pr["bld"]] = true
+				need_cash += st.build_cost(s)
+		target = maxi(target, mini(2200 if r >= 3 else 1400, 700 + need_cash))
 	if level == 0:
 		target = 900
+	target = int(float(target) * float(flags.get("tgt", 0.7)))
 	var spare := v * 100 + int(p["money"]) - target
 	return clampi(spare / 200, 0, mx)
