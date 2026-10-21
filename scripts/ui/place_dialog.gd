@@ -203,7 +203,7 @@ func _draw() -> void:
 	for b in boards:
 		var s: int = b["seat"]
 		var q: Dictionary = st.players[s]
-		var bd: Dictionary = D.BOARD_B if q["board"] == "B" else D.BOARD_A
+		var bd: Dictionary = D.board_info(q)
 		var o := origin + Vector2(b["off"] * cell, 0)
 		var k: float = cell / float(bd["cell"])
 		var img: Texture2D = UI.tex(bd["img"])

@@ -156,7 +156,7 @@ func _house_row(i: int) -> Control:
 	var c: Dictionary = D.COLORS[i]
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 10)
-	var port := UI.icon_rect(UI.tex("res://assets/tokens/ritratto_%s_%s.jpg" % [c["id"], sides[i]]), Vector2(52, 66))
+	var port := UI.icon_rect(UI.tex("res://assets/tokens/ritratto_it_%s.jpg" % c["id"]), Vector2(52, 66))
 	port.mouse_filter = Control.MOUSE_FILTER_STOP
 	port.tooltip_text = "Clic: cambia principe / principessa"
 	port.gui_input.connect(func(ev):

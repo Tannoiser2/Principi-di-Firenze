@@ -184,35 +184,48 @@ const BANKER_START := 600
 ## Plance del principato: lato A (7x7, palazzo in basso a sinistra) e lato B (10x5, palazzo al centro in basso)
 const BOARD_A := {"w": 7, "h": 7, "palazzo": [Vector2i(0, 5), Vector2i(1, 5), Vector2i(2, 5), Vector2i(0, 6), Vector2i(1, 6), Vector2i(2, 6)],
 	"img": "res://assets/board/principato_a.jpg", "img_w": 2048, "img_h": 1627, "x0": 52.0, "y0": 96.0, "cell": 203.9}
+## Plance italiane (principato e plancia del giocatore insieme), una per colore
+const BOARD_IT := {
+	"giallo": {"w": 7, "h": 7, "palazzo": BOARD_A["palazzo"], "img": "res://assets/board/plancia_it_giallo.jpg", "img_w": 2048, "img_h": 1470, "x0": 490.9, "y0": 90.7, "cell": 145.13, "cell_h": 140.34},
+	"verde": {"w": 7, "h": 7, "palazzo": BOARD_A["palazzo"], "img": "res://assets/board/plancia_it_verde.jpg", "img_w": 2048, "img_h": 1472, "x0": 490.9, "y0": 92.6, "cell": 145.40, "cell_h": 144.42},
+	"blu": {"w": 7, "h": 7, "palazzo": BOARD_A["palazzo"], "img": "res://assets/board/plancia_it_blu.jpg", "img_w": 2048, "img_h": 1474, "x0": 485.3, "y0": 91.3, "cell": 145.31, "cell_h": 143.71},
+	"nero": {"w": 7, "h": 7, "palazzo": BOARD_A["palazzo"], "img": "res://assets/board/plancia_it_nero.jpg", "img_w": 2048, "img_h": 1469, "x0": 487.8, "y0": 91.3, "cell": 145.31, "cell_h": 144.51},
+	"rosso": {"w": 7, "h": 7, "palazzo": BOARD_A["palazzo"], "img": "res://assets/board/plancia_it_rosso.jpg", "img_w": 2048, "img_h": 1473, "x0": 488.4, "y0": 88.9, "cell": 145.40, "cell_h": 144.69},
+}
+
+## La plancia del principato di un giocatore
+static func board_info(p: Dictionary) -> Dictionary:
+	if p["board"] == "B":
+		return BOARD_B
+	return BOARD_IT.get(p["color"], BOARD_A)
+
 const BOARD_B := {"w": 10, "h": 5, "palazzo": [Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 4)],
 	"img": "res://assets/board/principato_b.jpg", "img_w": 2048, "img_h": 1635, "x0": 4.0, "y0": 4.0, "cell": 204.2}
 
-## Posizioni sul tabellone (frazioni dell'immagine 8500x4204), misurate confrontando le tessere
-## con le sagome stampate (tools/misura_tabellone.py)
+## Posizioni sul tabellone italiano (frazioni dell'immagine), misurate sulla scansione
 const BOARD_POS := {
-	"bosco": Vector2(0.3312, 0.5086), "lago": Vector2(0.2256, 0.5086), "parco": Vector2(0.1209, 0.542),
-	"prestigio": Vector2(0.1239, 0.7969), "reclutamento": Vector2(0.2473, 0.7969),
-	"costruttore": Vector2(0.3449, 0.679), "giullare": Vector2(0.3455, 0.8494),
-	"universita": Vector2(0.7613, 0.229), "laboratorio": Vector2(0.6377, 0.229), "bottega": Vector2(0.5137, 0.2315),
-	"biblioteca": Vector2(0.514, 0.4648), "opera": Vector2(0.7616, 0.4642), "ospedale": Vector2(0.6386, 0.4654),
-	"studio": Vector2(0.5143, 0.6648), "teatro": Vector2(0.6563, 0.6636), "cappella": Vector2(0.4811, 0.8654), "torre": Vector2(0.551, 0.8673),
-	"viaggio": Vector2(0.6636, 0.9), "opinione": Vector2(0.7772, 0.9012), "religione": Vector2(0.8913, 0.9),
-	"bonus": Vector2(0.8889, 0.271), "professioni": Vector2(0.8901, 0.6105),
+	"bosco": Vector2(0.1207, 0.3446), "lago": Vector2(0.2223, 0.3045), "parco": Vector2(0.2038, 0.4737),
+	"giullare": Vector2(0.1207, 0.7018), "costruttore": Vector2(0.2254, 0.802),
+	"prestigio": Vector2(0.3524, 0.3258), "reclutamento": Vector2(0.3524, 0.7206),
+}
+## Ritratti dei personaggi sul tabellone (asta dei personaggi)
+const CHAR_POS := {
+	"musa": Vector2(0.4731, 0.2256), "principessa": Vector2(0.4731, 0.4637), "professore": Vector2(0.4731, 0.7268),
+	"cardinale": Vector2(0.6922, 0.3195), "mercante": Vector2(0.6922, 0.589), "banchiere": Vector2(0.6922, 0.8333),
 }
 ## Sagome stampate ruotate (quarti di giro orari)
-const BOARD_ROT := {"parco": 3}
+const BOARD_ROT := {"bosco": 1, "parco": 1}
+const BOARD_ASPECT := 3192.0 / 6299.0
+const FAME := [Vector2(0.0445, 0.0777), Vector2(0.1143, 0.0526), Vector2(0.1689, 0.0526), Vector2(0.2235, 0.0526), Vector2(0.2781, 0.0526), Vector2(0.3328, 0.0526), Vector2(0.3874, 0.0526), Vector2(0.4420, 0.0526), Vector2(0.4966, 0.0526), Vector2(0.5512, 0.0526), Vector2(0.6034, 0.0542), Vector2(0.6557, 0.0558), Vector2(0.7079, 0.0573), Vector2(0.7601, 0.0589), Vector2(0.8124, 0.0605), Vector2(0.8646, 0.0620), Vector2(0.9168, 0.0636), Vector2(0.9690, 0.0652), Vector2(0.9906, 0.2130), Vector2(0.9906, 0.3216), Vector2(0.9906, 0.4302), Vector2(0.9906, 0.5388), Vector2(0.9906, 0.6475), Vector2(0.9906, 0.7561), Vector2(0.9906, 0.8647), Vector2(0.9856, 0.8922), Vector2(0.9322, 0.9499), Vector2(0.8778, 0.9499), Vector2(0.8234, 0.9499), Vector2(0.7689, 0.9499), Vector2(0.7145, 0.9499), Vector2(0.6601, 0.9499), Vector2(0.6056, 0.9499), Vector2(0.5512, 0.9499), Vector2(0.4966, 0.9499), Vector2(0.4420, 0.9499), Vector2(0.3874, 0.9499), Vector2(0.3328, 0.9499), Vector2(0.2781, 0.9499), Vector2(0.2235, 0.9499), Vector2(0.1689, 0.9499), Vector2(0.1143, 0.9499), Vector2(0.0667, 0.9248), Vector2(0.0286, 0.8396), Vector2(0.0283, 0.7356), Vector2(0.0279, 0.6316), Vector2(0.0276, 0.5276), Vector2(0.0273, 0.4236), Vector2(0.0270, 0.3195), Vector2(0.0267, 0.2155)]
+const ROUND_X := [0.7671, 0.7989, 0.8306, 0.863, 0.896, 0.9284, 0.9602]
 
 ## Casella della traccia della fama (0..49) sul tabellone, in frazioni
 static func fame_pos(i: int) -> Vector2:
-	i = posmod(i, 50)
-	if i <= 11:
-		return Vector2(0.0088, (773.0 - i * 58.6) / 791.0)
-	if i <= 38:
-		return Vector2((40.0 + (i - 12) * 59.2) / 1600.0, 0.022)
-	return Vector2(0.99, (128.0 + (i - 39) * 58.6) / 791.0)
+	return FAME[posmod(i, 50)]
+
 
 static func round_pos(r: int) -> Vector2:
-	return Vector2((160.0 + (r - 1) * 64.0) / 1600.0, 151.0 / 791.0)
+	return Vector2(ROUND_X[clampi(r, 1, 7) - 1], 0.268)
 
 
 ## Celle di una sagoma ruotata (r = 0..3, quarti di giro orari) e specchiata (f).

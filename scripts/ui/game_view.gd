@@ -250,7 +250,7 @@ func _player_card(s: int) -> Control:
 	h.add_theme_constant_override("separation", 8)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pc.add_child(h)
-	h.add_child(UI.icon_rect(UI.tex("res://assets/tokens/ritratto_%s_%s.jpg" % [p["color"], p["side"]]), Vector2(64, 82)))
+	h.add_child(UI.icon_rect(UI.tex("res://assets/tokens/ritratto_it_%s.jpg" % p["color"]), Vector2(64, 82)))
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 0)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE

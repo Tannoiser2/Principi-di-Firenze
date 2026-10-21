@@ -104,5 +104,7 @@ func _init() -> void:
 		if g.req.is_empty():
 			continue
 		var v = g.eng.ais[r["seat"]].decide(g.eng, r["seat"], r)
+		if is_instance_valid(g._place):
+			g._place.queue_free()
 		g._reply(v)
 	quit()

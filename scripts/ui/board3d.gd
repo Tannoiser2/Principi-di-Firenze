@@ -10,7 +10,8 @@ signal principality_clicked(seat: int)
 
 const D = preload("res://scripts/data/pf_data.gd")
 const BW := 24.0                         # larghezza del tabellone
-const BH := 24.0 * 4204.0 / 8500.0
+const BH := 24.0 * 3192.0 / 6299.0
+const IW := 12.5                         # larghezza della plancia italiana (principato + plancia)
 const PW := 9.0                          # larghezza della plancia del principato
 const CW := 6.6                          # larghezza della plancia del giocatore
 const CH := CW * 723.0 / 1400.0
@@ -177,16 +178,43 @@ func board_point(f: Vector2) -> Vector3:
 	return Vector3((f.x - 0.5) * BW, 0.1, (f.y - 0.5) * BH)
 
 
+## Larghezza e altezza della plancia del principato del giocatore
+func pw(s: int) -> float:
+	return PW if st.players[s]["board"] == "B" else IW
+
+
+func ph(s: int) -> float:
+	var b: Dictionary = D.board_info(st.players[s])
+	return pw(s) * float(b["img_h"]) / float(b["img_w"])
+
+
+## Posizioni sul tavolo (fuori dal tabellone): edifici a sinistra, libertà e mazzi a destra
+var table_pos := {}
+
+
+func _table_layout() -> void:
+	var i := 0
+	for b in D.BUILDINGS:
+		table_pos[b] = Vector3(-BW / 2.0 - 2.2 - (i % 3) * 2.7, 0, -4.6 + (i / 3) * 3.1)
+		i += 1
+	var j := 0
+	for f in D.FREEDOMS:
+		table_pos[f] = Vector3(BW / 2.0 + 5.4, 0, -3.5 + j * 1.4)
+		j += 1
+	table_pos["bonus"] = Vector3(BW / 2.0 + 2.2, 0, -2.6)
+	table_pos["professioni"] = Vector3(BW / 2.0 + 2.2, 0, 1.6)
+
+
 ## Disposizione delle casate attorno al tabellone
 func _layout() -> void:
+	_table_layout()
 	var n := st.n
 	var coop: bool = st.opts.get("coop", false)
-	var bh := PW * (1635.0 if coop else 1627.0) / 2048.0
 	if coop:
-		var gap := 0.0
-		var total := n * PW + (n - 1) * gap
+		var bh := PW * 1635.0 / 2048.0
+		var total := n * PW
 		for s in n:
-			var x := -total / 2.0 + s * (PW + gap)
+			var x := -total / 2.0 + s * PW
 			group_pos[s] = Vector3(x, 0, BH / 2.0 + 1.6)
 			plancia_pos[s] = Vector3(x + PW / 2.0 - 0.9, 0, BH / 2.0 + 1.6 + bh + CH / 2.0 + 0.5)
 		dist0 = maxf(36.0, total * 0.95)
@@ -199,25 +227,25 @@ func _layout() -> void:
 				bottom.append(s)
 			else:
 				topr.append(s)
-		var gw := PW + 1.4
+		var gw := IW + 1.6
 		for i in bottom.size():
 			var s: int = bottom[i]
-			var x := (i - (bottom.size() - 1) / 2.0) * gw - PW / 2.0
+			var x := (i - (bottom.size() - 1) / 2.0) * gw - IW / 2.0
 			group_pos[s] = Vector3(x, 0, BH / 2.0 + 1.5)
-			plancia_pos[s] = Vector3(x + PW / 2.0 - 1.0, 0, BH / 2.0 + 1.5 + bh + CH / 2.0 + 0.45)
 		for i in topr.size():
 			var s: int = topr[i]
-			var x := (i - (topr.size() - 1) / 2.0) * gw - PW / 2.0
-			group_pos[s] = Vector3(x, 0, -BH / 2.0 - 1.5 - bh)
-			plancia_pos[s] = Vector3(x + PW / 2.0 - 1.0, 0, -BH / 2.0 - 1.5 - bh - CH / 2.0 - 0.45)
-		dist0 = 38.0 if topr.is_empty() else 50.0
-		focus0 = Vector3(0, 0, 8.0 if topr.is_empty() else 3.5)
+			var x := (i - (topr.size() - 1) / 2.0) * gw - IW / 2.0
+			group_pos[s] = Vector3(x, 0, -BH / 2.0 - 1.5 - ph(s))
+		dist0 = 40.0 if topr.is_empty() else 52.0
+		focus0 = Vector3(0, 0, 7.0 if topr.is_empty() else 2.0)
 	for s in n:
 		var p: Dictionary = st.players[s]
-		var img := "res://assets/board/principato_b.jpg" if p["board"] == "B" else "res://assets/board/principato_a.jpg"
-		var hh := PW * (1635.0 if p["board"] == "B" else 1627.0) / 2048.0
-		_slab(img, PW, hh, group_pos[s] + Vector3(PW / 2.0, 0, hh / 2.0), 0.08, self)
-		_slab("res://assets/board/plancia_%s_%s.jpg" % [p["color"], p["side"]], CW, CH, plancia_pos[s], 0.06, self)
+		var b: Dictionary = D.board_info(p)
+		var w := pw(s)
+		var hh := ph(s)
+		_slab(b["img"], w, hh, group_pos[s] + Vector3(w / 2.0, 0, hh / 2.0), 0.08, self)
+		if coop:
+			_slab("res://assets/board/plancia_%s_%s.jpg" % [p["color"], p["side"]], CW, CH, plancia_pos[s], 0.06, self)
 		var lab := Label3D.new()
 		lab.text = p["name"]
 		lab.font = UI.font_title
@@ -228,16 +256,22 @@ func _layout() -> void:
 		lab.outline_modulate = Color(0.1, 0.06, 0.03)
 		lab.rotation_degrees.x = -90
 		var above: bool = group_pos[s].z > 0
-		lab.position = group_pos[s] + Vector3(PW / 2.0, 0.12, -0.45 if above else hh + 0.45)
+		lab.position = group_pos[s] + Vector3(w / 2.0, 0.12, -0.45 if above else hh + 0.45)
 		add_child(lab)
 
 
 ## Geometria della griglia del principato
 func grid_info(s: int) -> Dictionary:
 	var p: Dictionary = st.players[s]
-	var b: Dictionary = D.BOARD_B if p["board"] == "B" else D.BOARD_A
-	var k := PW / float(b["img_w"])
+	var b: Dictionary = D.board_info(p)
+	var k := pw(s) / float(b["img_w"])
 	return {"o": group_pos[s] + Vector3(b["x0"] * k, 0.08, b["y0"] * k), "c": b["cell"] * k}
+
+
+## Punto della plancia italiana (coordinate dell'immagine originale 3296 px di larghezza)
+func it_point(s: int, x: float, y: float) -> Vector3:
+	var k := pw(s) / 3296.0
+	return group_pos[s] + Vector3(x * k, 0.08, y * k)
 
 
 # ================================================================== telecamera
@@ -595,6 +629,8 @@ func refresh() -> void:
 
 
 func _bp(key: String) -> Vector3:
+	if table_pos.has(key):
+		return table_pos[key]
 	return board_point(D.BOARD_POS[key])
 
 
@@ -604,7 +640,7 @@ func _supply_stack(id: String, count: int) -> void:
 		return
 	var holder := Node3D.new()
 	holder.position = _bp(id)
-	holder.rotation.y = -PI / 2.0 * int(D.BOARD_ROT.get(id, 0))
+	holder.rotation.y = -PI / 2.0 * int(D.BOARD_ROT.get(id, 0)) if D.BOARD_POS.has(id) else 0.0
 	dyn.add_child(holder)
 	_cardboard(id, SUPPLY_CELL, count, holder, true)
 	if count > 1:
@@ -643,13 +679,13 @@ func _refresh_supply() -> void:
 		_supply_stack(b, st.supply["bld"][b])
 	for f in D.FREEDOMS:
 		_flat_stack("res://assets/tiles/liberta_%s.jpg" % f, 2.0, 0.85, _bp(f), st.supply["free"][f], THICK, Color("#9c8463"))
-	_flat_stack("res://assets/cards/dorso_prestigio.jpg", 2.6, 3.65, _bp("prestigio"), st.prest_deck.size(), 0.012)
-	_flat_stack("res://assets/cards/reclutamento.jpg", 2.6, 3.65, _bp("reclutamento"), st.supply["reclutamento"], 0.012)
+	_flat_stack("res://assets/cards/dorso_prestigio.jpg", 2.75, 3.84, _bp("prestigio"), st.prest_deck.size(), 0.012)
+	_flat_stack("res://assets/cards/dorso_reclutamento.jpg", 2.75, 3.84, _bp("reclutamento"), st.supply["reclutamento"], 0.012)
 	_flat_stack("res://assets/cards/dorso_bonus.jpg", 2.6, 3.65, _bp("bonus"), st.bonus_deck.size(), 0.01)
 	_flat_stack("res://assets/cards/dorso_professioni.jpg", 2.6, 3.65, _bp("professioni"), st.prof_deck.size(), 0.01)
-	_square_token("res://assets/tokens/costruttore.jpg", _bp("costruttore"), 0.82, st.supply["costruttore"])
+	_square_token("res://assets/tokens/costruttore_it.jpg", _bp("costruttore"), 1.3, st.supply["costruttore"])
 	for i in st.supply["giullare"]:
-		_disc(_bp("giullare") + Vector3(0, i * THICK, 0), Color("#9c8463"), 0.38, THICK, "res://assets/tokens/giullare_tondo.png" if i == st.supply["giullare"] - 1 else "")
+		_disc(_bp("giullare") + Vector3(0, i * THICK, 0), Color("#9c8463"), 0.78, THICK, "res://assets/tokens/giullare_tondo.png" if i == st.supply["giullare"] - 1 else "")
 	# pedine dell'asta sulle pile già assegnate
 	var au: Dictionary = eng.auction
 	if au.has("won"):
@@ -688,7 +724,7 @@ func _palazzo(s: int) -> void:
 	if model == null:
 		return
 	var p: Dictionary = st.players[s]
-	var b: Dictionary = D.BOARD_B if p["board"] == "B" else D.BOARD_A
+	var b: Dictionary = D.board_info(p)
 	var mn := Vector2i(99, 99)
 	for cl in b["palazzo"]:
 		mn = Vector2i(mini(mn.x, cl.x), mini(mn.y, cl.y))
@@ -711,11 +747,53 @@ func _refresh_player(s: int) -> void:
 			if coop and absi(o - s) == 1:
 				continue
 		_piece(s, pc)
-	# plancia del giocatore: libertà, costruttori, giullari
+	if p["board"] == "B":
+		_tokens_side_b(s)
+	else:
+		_tokens_it(s)
+	# personaggio, disco 50/100 e opere completate accanto alla plancia
+	var right: Vector3 = group_pos[s] + Vector3(pw(s) + 0.9, TOP, 0.9)
+	var laps := int(p["fame"]) / 50
+	if laps >= 1:
+		_disc(group_pos[s] + Vector3(-0.7, 0, 0.7), UI.pcolor(p["color"]), 0.4, 0.06, "res://assets/tokens/disco%s_%s.jpg" % ["100" if laps >= 2 else "50", p["color"]])
+	var cards := []
+	if p["wolf"]:
+		for e in p["row"]:
+			cards.append(("res://assets/cards/prof%02d.jpg" % e["c"]) if (e["up"] and e["c"] > 0) else ("res://assets/cards/reclutamento.jpg" if e["up"] else "res://assets/cards/dorso_professioni.jpg"))
+	else:
+		for c in p["table"]:
+			cards.append(("res://assets/cards/prof%02d.jpg" % c) if c > 0 else "res://assets/cards/reclutamento.jpg")
+	for i in cards.size():
+		_quad(cards[i], 1.2, 1.68, right + Vector3((i % 2) * 1.3, 0.01 * i, (i / 2) * 0.7), false)
+	if p["char"] != "":
+		var q := _quad("res://assets/cards/pers_%s.jpg" % p["char"], 1.2, 1.68, group_pos[s] + Vector3(-0.9, TOP, ph(s) - 1.2), false)
+		if not p["char_up"]:
+			q.transparency = 0.5
+
+
+## Libertà, costruttori e giullari sulla plancia italiana (caselle misurate sulla scansione)
+func _tokens_it(s: int) -> void:
+	var p: Dictionary = st.players[s]
+	var k := pw(s) / 3296.0
+	var fy := {"viaggio": 1557.0, "religione": 1814.0, "opinione": 2068.0}
+	var used := {}
+	for f in p["freedoms"]:
+		var n: int = used.get(f, 0)
+		used[f] = n + 1
+		_flat_stack("res://assets/tiles/liberta_%s.jpg" % f, 500.0 * k, 200.0 * k, it_point(s, 418.0 + n * 40.0, fy[f]) + Vector3(0, n * THICK, 0), 1, THICK, Color("#9c8463"))
+	var bx := [943.0, 1485.0, 2023.0]
+	for i in mini(3, int(p["builders"])):
+		_square_token("res://assets/tokens/costruttore_it.jpg", it_point(s, bx[i], 2048.0), 220.0 * k)
+	for i in int(p["jesters"]):
+		_disc(it_point(s, 250.0 + (i % 3) * 190.0, 1180.0 - (i / 3) * 190.0), Color("#9c8463"), 85.0 * k, THICK, "res://assets/tokens/giullare_tondo.png")
+
+
+## Plancia del giocatore separata (lato B, costruzioni in comune)
+func _tokens_side_b(s: int) -> void:
+	var p: Dictionary = st.players[s]
 	var cp: Vector3 = plancia_pos[s]
 	var ox := cp.x - CW / 2.0
 	var oz := cp.z - CH / 2.0
-	# caselle stampate sulla plancia (misurate sull'immagine)
 	var rows := [0.14, 0.378, 0.606]
 	var fslot := {"viaggio": 0, "opinione": 1, "religione": 2}
 	var used := {}
@@ -725,57 +803,34 @@ func _refresh_player(s: int) -> void:
 		used[r] = k + 1
 		_flat_stack("res://assets/tiles/liberta_%s.jpg" % f, CW * 0.2286, CH * 0.186, Vector3(ox + CW * 0.585 + k * 0.12, TOP + k * THICK, oz + CH * rows[r]), 1, THICK, Color("#9c8463"))
 	for i in mini(3, int(p["builders"])):
-		_square_token("res://assets/tokens/costruttore.jpg", Vector3(ox + CW * 0.798, TOP, oz + CH * [0.139, 0.371, 0.603][i]), CW * 0.095)
+		_square_token("res://assets/tokens/costruttore_it.jpg", Vector3(ox + CW * 0.798, TOP, oz + CH * [0.139, 0.371, 0.603][i]), CW * 0.095)
 	for i in int(p["jesters"]):
 		_disc(Vector3(ox + CW * (0.5 + 0.075 * i), TOP, oz + CH * 0.86), Color("#9c8463"), 0.27, THICK, "res://assets/tokens/giullare_tondo.png")
-	# disco 50/100
-	var laps := int(p["fame"]) / 50
-	if laps >= 1:
-		_disc(Vector3(ox - 0.6, 0, oz + 0.6), UI.pcolor(p["color"]), 0.4, 0.06, "res://assets/tokens/disco%s_%s.jpg" % ["100" if laps >= 2 else "50", p["color"]])
-	# opere completate (carte giocate) accanto alla plancia
-	var cx := cp.x + CW / 2.0 + 0.75
-	if p["wolf"]:
-		for i in p["row"].size():
-			var e: Dictionary = p["row"][i]
-			var path: String = ("res://assets/cards/prof%02d.jpg" % e["c"]) if (e["up"] and e["c"] > 0) else ("res://assets/cards/reclutamento.jpg" if e["up"] else "res://assets/cards/dorso_professioni.jpg")
-			_quad(path, 1.0, 1.39, Vector3(cx + i * 0.55, TOP + 0.01 * i, cp.z), false)
-	else:
-		for i in p["table"].size():
-			var c: int = p["table"][i]
-			var path2 := ("res://assets/cards/prof%02d.jpg" % c) if c > 0 else "res://assets/cards/reclutamento.jpg"
-			_quad(path2, 1.0, 1.39, Vector3(cx + i * 0.55, TOP + 0.01 * i, cp.z), false)
-	# personaggio
-	if p["char"] != "":
-		var q := _quad("res://assets/cards/pers_%s.jpg" % p["char"], 1.1, 1.9, Vector3(ox - 0.75, TOP, cp.z), false)
-		if not p["char_up"]:
-			q.transparency = 0.5
 
 
 func _refresh_extra() -> void:
-	# personaggi all'asta (espansione)
+	# personaggi all'asta (espansione): pedina e offerta sul ritratto stampato
 	if not st.chars.is_empty():
-		var i := 0
 		for c in D.CHARACTERS:
-			var x := BW / 2.0 + 1.5 + (i % 2) * 1.6
-			var z := -BH / 2.0 + 1.6 + (i / 2) * 2.85
-			i += 1
+			var at := board_point(D.CHAR_POS[c])
 			if st.chars[c]["owner"] >= 0:
+				var who: Dictionary = st.players[st.chars[c]["owner"]]
+				_disc(at + Vector3(0.6, 0, 0.6), UI.pcolor(who["color"]), 0.25, 0.08)
 				continue
-			_quad("res://assets/cards/pers_%s.jpg" % c, 1.5, 2.6, Vector3(x, 0.01, z))
 			if eng.char_bids.has(c):
 				var b: Array = eng.char_bids[c]
-				_pawn(Vector3(x, 0.02, z + 0.4), UI.pcolor(st.players[b[0]]["color"]))
-				_label(str(b[1] * 100), Vector3(x, 0.8, z + 1.0), 72)
+				_pawn(at + Vector3(0.7, 0.02, 0.3), UI.pcolor(st.players[b[0]]["color"]))
+				_label(str(b[1] * 100), at + Vector3(0.7, 0.9, 0.9), 72)
 			if c == "banchiere" and st.banker_money > 0:
-				_label("%d" % st.banker_money, Vector3(x, 0.1, z - 0.6), 64, UI.GOLD)
+				_label("%d" % st.banker_money, at + Vector3(-0.2, 0.15, 1.1), 64, UI.GOLD)
 	# solitario: carta dell'Automa e casate fantasma
 	if st.is_solo():
 		if st.solo.get("card", 0) > 0:
-			_quad("res://assets/cards/automa%02d.jpg" % st.solo["card"], 2.6, 3.6, Vector3(BW / 2.0 + 2.2, 0.01, -BH / 2.0 + 2.2))
+			_quad("res://assets/cards/automa%02d.jpg" % st.solo["card"], 2.6, 3.6, Vector3(BW / 2.0 + 9.0, 0.01, -1.0))
 		var ds: Array = st.solo["dummies"]
 		for d in ds.size():
 			var col: Array = ds[d]
-			var x2 := -BW / 2.0 - 2.0 - d * 1.5
+			var x2 := -BW / 2.0 - 10.6 - d * 1.5
 			_label("Casata %d" % (d + 1), Vector3(x2, 0.05, -BH / 2.0 + 0.5), 48)
 			for j in col.size():
 				var e: Dictionary = col[j]
