@@ -649,7 +649,7 @@ func _refresh_supply() -> void:
 	_flat_stack("res://assets/cards/dorso_professioni.jpg", 2.6, 3.65, _bp("professioni"), st.prof_deck.size(), 0.01)
 	_square_token("res://assets/tokens/costruttore.jpg", _bp("costruttore"), 0.82, st.supply["costruttore"])
 	for i in st.supply["giullare"]:
-		_disc(_bp("giullare") + Vector3(0, i * THICK, 0), Color("#9c8463"), 0.38, THICK, "res://assets/tokens/giullare.jpg" if i == st.supply["giullare"] - 1 else "")
+		_disc(_bp("giullare") + Vector3(0, i * THICK, 0), Color("#9c8463"), 0.38, THICK, "res://assets/tokens/giullare_tondo.png" if i == st.supply["giullare"] - 1 else "")
 	# pedine dell'asta sulle pile già assegnate
 	var au: Dictionary = eng.auction
 	if au.has("won"):
@@ -680,8 +680,29 @@ func _refresh_track() -> void:
 	_quad("res://assets/tokens/giglio.png", 0.62, 0.74, rp + Vector3(0, 0.02, 0), true)
 
 
+## Il palazzo stampato sulla plancia, in 3D
+func _palazzo(s: int) -> void:
+	if not show_models:
+		return
+	var model := _model("palazzo")
+	if model == null:
+		return
+	var p: Dictionary = st.players[s]
+	var b: Dictionary = D.BOARD_B if p["board"] == "B" else D.BOARD_A
+	var mn := Vector2i(99, 99)
+	for cl in b["palazzo"]:
+		mn = Vector2i(mini(mn.x, cl.x), mini(mn.y, cl.y))
+	var info := grid_info(s)
+	var c: float = info["c"]
+	var o: Vector3 = info["o"]
+	model.scale = Vector3(c, c, c)
+	model.position = o + Vector3((mn.x + 1.5) * c, 0.004, (mn.y + 1.0) * c)
+	dyn.add_child(model)
+
+
 func _refresh_player(s: int) -> void:
 	var p: Dictionary = st.players[s]
+	_palazzo(s)
 	var coop: bool = st.opts.get("coop", false)
 	for pc in p["pieces"]:
 		if pc.get("ghost", false):
@@ -706,7 +727,7 @@ func _refresh_player(s: int) -> void:
 	for i in mini(3, int(p["builders"])):
 		_square_token("res://assets/tokens/costruttore.jpg", Vector3(ox + CW * 0.798, TOP, oz + CH * [0.139, 0.371, 0.603][i]), CW * 0.095)
 	for i in int(p["jesters"]):
-		_disc(Vector3(ox + CW * (0.5 + 0.075 * i), TOP, oz + CH * 0.86), Color("#9c8463"), 0.27, THICK, "res://assets/tokens/giullare.jpg")
+		_disc(Vector3(ox + CW * (0.5 + 0.075 * i), TOP, oz + CH * 0.86), Color("#9c8463"), 0.27, THICK, "res://assets/tokens/giullare_tondo.png")
 	# disco 50/100
 	var laps := int(p["fame"]) / 50
 	if laps >= 1:
