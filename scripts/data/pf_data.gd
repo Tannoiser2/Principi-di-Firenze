@@ -193,10 +193,27 @@ const BOARD_IT := {
 	"rosso": {"w": 7, "h": 7, "palazzo": BOARD_A["palazzo"], "img": "res://assets/board/plancia_it_rosso.jpg", "img_w": 2048, "img_h": 1473, "x0": 488.4, "y0": 88.9, "cell": 145.40, "cell_h": 144.69},
 }
 
+## Retro delle plance italiane (costruzioni in comune): griglia 10x5 lungo il bordo
+const BOARD_B_IT := {
+	"giallo": {"w": 10, "h": 5, "palazzo": [Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(4, 4), Vector2i(5, 4), Vector2i(6, 4)], "img": "res://assets/board/principato_b_it_giallo.jpg", "img_w": 2048, "img_h": 1024, "x0": 0.0, "y0": 0.0, "cell": 204.8},
+	"verde": {"w": 10, "h": 5, "palazzo": [Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 4)], "img": "res://assets/board/principato_b_it_verde.jpg", "img_w": 2048, "img_h": 1024, "x0": 0.0, "y0": 0.0, "cell": 204.8},
+	"blu": {"w": 10, "h": 5, "palazzo": [Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(4, 4), Vector2i(5, 4), Vector2i(6, 4)], "img": "res://assets/board/principato_b_it_blu.jpg", "img_w": 2048, "img_h": 1024, "x0": 0.0, "y0": 0.0, "cell": 204.8},
+	"nero": {"w": 10, "h": 5, "palazzo": [Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(4, 4), Vector2i(5, 4), Vector2i(6, 4)], "img": "res://assets/board/principato_b_it_nero.jpg", "img_w": 2048, "img_h": 1024, "x0": 0.0, "y0": 0.0, "cell": 204.8},
+	"rosso": {"w": 10, "h": 5, "palazzo": [Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 4)], "img": "res://assets/board/principato_b_it_rosso.jpg", "img_w": 2048, "img_h": 1024, "x0": 0.0, "y0": 0.0, "cell": 204.8},
+}
+## Parte del retro con libertà e costruttori (coordinate in pixel della scansione)
+const PLANCIA_B_IT := {
+	"giallo": {"img": "res://assets/board/plancia_b_it_giallo.jpg", "w": 3271, "h": 1226, "free": {"viaggio": Vector2(494, 399), "religione": Vector2(496, 658), "opinione": Vector2(488, 912)}, "builders": [Vector2(1357, 584), Vector2(1899, 584), Vector2(2441, 584)]},
+	"verde": {"img": "res://assets/board/plancia_b_it_verde.jpg", "w": 3275, "h": 1214, "free": {"viaggio": Vector2(2806, 395), "religione": Vector2(2804, 653), "opinione": Vector2(2804, 908)}, "builders": [Vector2(630, 490), Vector2(1172, 490), Vector2(1714, 490)]},
+	"blu": {"img": "res://assets/board/plancia_b_it_blu.jpg", "w": 2382, "h": 2105, "free": {"viaggio": Vector2(1698, 1116), "religione": Vector2(1700, 1373), "opinione": Vector2(1694, 1628)}, "builders": [Vector2(544, 416), Vector2(1086, 416), Vector2(1628, 416)]},
+	"nero": {"img": "res://assets/board/plancia_b_it_nero.jpg", "w": 3272, "h": 1215, "free": {"viaggio": Vector2(480, 390), "religione": Vector2(478, 647), "opinione": Vector2(480, 900)}, "builders": [Vector2(1350, 574), Vector2(1892, 574), Vector2(2434, 574)]},
+	"rosso": {"img": "res://assets/board/plancia_b_it_rosso.jpg", "w": 3277, "h": 1214, "free": {"viaggio": Vector2(2814, 393), "religione": Vector2(2812, 650), "opinione": Vector2(2814, 907)}, "builders": [Vector2(640, 484), Vector2(1182, 484), Vector2(1724, 484)]},
+}
+
 ## La plancia del principato di un giocatore
 static func board_info(p: Dictionary) -> Dictionary:
 	if p["board"] == "B":
-		return BOARD_B
+		return BOARD_B_IT.get(p["color"], BOARD_B)
 	return BOARD_IT.get(p["color"], BOARD_A)
 
 const BOARD_B := {"w": 10, "h": 5, "palazzo": [Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 4)],

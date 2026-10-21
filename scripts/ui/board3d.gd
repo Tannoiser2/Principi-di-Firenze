@@ -211,12 +211,14 @@ func _layout() -> void:
 	var n := st.n
 	var coop: bool = st.opts.get("coop", false)
 	if coop:
-		var bh := PW * 1635.0 / 2048.0
+		var bh := PW * 1024.0 / 2048.0
 		var total := n * PW
 		for s in n:
 			var x := -total / 2.0 + s * PW
 			group_pos[s] = Vector3(x, 0, BH / 2.0 + 1.6)
-			plancia_pos[s] = Vector3(x + PW / 2.0 - 0.9, 0, BH / 2.0 + 1.6 + bh + CH / 2.0 + 0.5)
+			var pb: Dictionary = D.PLANCIA_B_IT[st.players[s]["color"]]
+			var hh2: float = (PW - 0.3) * float(pb["h"]) / float(pb["w"])
+			plancia_pos[s] = Vector3(x + PW / 2.0, 0, BH / 2.0 + 1.6 + bh + hh2 / 2.0 + 0.5)
 		dist0 = maxf(36.0, total * 0.95)
 		focus0 = Vector3(0, 0, 7.0)
 	else:
@@ -245,7 +247,8 @@ func _layout() -> void:
 		var hh := ph(s)
 		_slab(b["img"], w, hh, group_pos[s] + Vector3(w / 2.0, 0, hh / 2.0), 0.08, self)
 		if coop:
-			_slab("res://assets/board/plancia_%s_%s.jpg" % [p["color"], p["side"]], CW, CH, plancia_pos[s], 0.06, self)
+			var pb2: Dictionary = D.PLANCIA_B_IT[p["color"]]
+			_slab(pb2["img"], PW - 0.3, (PW - 0.3) * float(pb2["h"]) / float(pb2["w"]), plancia_pos[s], 0.06, self)
 		var lab := Label3D.new()
 		lab.text = p["name"]
 		lab.font = UI.font_title
@@ -753,6 +756,10 @@ func _refresh_player(s: int) -> void:
 		_tokens_it(s)
 	# personaggio, disco 50/100 e opere completate accanto alla plancia
 	var right: Vector3 = group_pos[s] + Vector3(pw(s) + 0.9, TOP, 0.9)
+	var coop_b: bool = p["board"] == "B"
+	if coop_b:
+		var pb: Dictionary = D.PLANCIA_B_IT[p["color"]]
+		right = plancia_pos[s] + Vector3(-PW / 2.0 + 0.8, TOP, (PW - 0.3) * float(pb["h"]) / float(pb["w"]) / 2.0 + 1.2)
 	var laps := int(p["fame"]) / 50
 	if laps >= 1:
 		_disc(group_pos[s] + Vector3(-0.7, 0, 0.7), UI.pcolor(p["color"]), 0.4, 0.06, "res://assets/tokens/disco%s_%s.jpg" % ["100" if laps >= 2 else "50", p["color"]])
@@ -764,9 +771,10 @@ func _refresh_player(s: int) -> void:
 		for c in p["table"]:
 			cards.append(("res://assets/cards/prof%02d.jpg" % c) if c > 0 else "res://assets/cards/reclutamento.jpg")
 	for i in cards.size():
-		_quad(cards[i], 1.2, 1.68, right + Vector3((i % 2) * 1.3, 0.01 * i, (i / 2) * 0.7), false)
+		var off := Vector3(i * 1.1, 0.01 * i, 0) if coop_b else Vector3((i % 2) * 1.3, 0.01 * i, (i / 2) * 0.7)
+		_quad(cards[i], 1.2, 1.68, right + off, false)
 	if p["char"] != "":
-		var q := _quad("res://assets/cards/pers_%s.jpg" % p["char"], 1.2, 1.68, group_pos[s] + Vector3(-0.9, TOP, ph(s) - 1.2), false)
+		var q := _quad("res://assets/cards/pers_%s.jpg" % p["char"], 1.2, 1.68, (right + Vector3(7.0, 0, 0)) if coop_b else (group_pos[s] + Vector3(-0.9, TOP, ph(s) - 1.2)), false)
 		if not p["char_up"]:
 			q.transparency = 0.5
 
@@ -788,24 +796,24 @@ func _tokens_it(s: int) -> void:
 		_disc(it_point(s, 250.0 + (i % 3) * 190.0, 1180.0 - (i / 3) * 190.0), Color("#9c8463"), 85.0 * k, THICK, "res://assets/tokens/giullare_tondo.png")
 
 
-## Plancia del giocatore separata (lato B, costruzioni in comune)
+## Plancia del giocatore separata (retro italiano, costruzioni in comune)
 func _tokens_side_b(s: int) -> void:
 	var p: Dictionary = st.players[s]
-	var cp: Vector3 = plancia_pos[s]
-	var ox := cp.x - CW / 2.0
-	var oz := cp.z - CH / 2.0
-	var rows := [0.14, 0.378, 0.606]
-	var fslot := {"viaggio": 0, "opinione": 1, "religione": 2}
+	var pb: Dictionary = D.PLANCIA_B_IT[p["color"]]
+	var w := PW - 0.3
+	var k := w / float(pb["w"])
+	var o: Vector3 = plancia_pos[s] - Vector3(w / 2.0, -TOP, float(pb["h"]) * k / 2.0)
 	var used := {}
 	for f in p["freedoms"]:
-		var r: int = fslot[f]
-		var k: int = used.get(r, 0)
-		used[r] = k + 1
-		_flat_stack("res://assets/tiles/liberta_%s.jpg" % f, CW * 0.2286, CH * 0.186, Vector3(ox + CW * 0.585 + k * 0.12, TOP + k * THICK, oz + CH * rows[r]), 1, THICK, Color("#9c8463"))
+		var n: int = used.get(f, 0)
+		used[f] = n + 1
+		var v: Vector2 = pb["free"][f]
+		_flat_stack("res://assets/tiles/liberta_%s.jpg" % f, 500.0 * k, 200.0 * k, o + Vector3((v.x + n * 40.0) * k, n * THICK, v.y * k), 1, THICK, Color("#9c8463"))
 	for i in mini(3, int(p["builders"])):
-		_square_token("res://assets/tokens/costruttore_it.jpg", Vector3(ox + CW * 0.798, TOP, oz + CH * [0.139, 0.371, 0.603][i]), CW * 0.095)
+		var bv: Vector2 = pb["builders"][i]
+		_square_token("res://assets/tokens/costruttore_it.jpg", o + Vector3(bv.x * k, 0, bv.y * k), 220.0 * k)
 	for i in int(p["jesters"]):
-		_disc(Vector3(ox + CW * (0.5 + 0.075 * i), TOP, oz + CH * 0.86), Color("#9c8463"), 0.27, THICK, "res://assets/tokens/giullare_tondo.png")
+		_disc(o + Vector3((300.0 + i * 190.0) * k, 0, -0.5), Color("#9c8463"), 85.0 * k, THICK, "res://assets/tokens/giullare_tondo.png")
 
 
 func _refresh_extra() -> void:

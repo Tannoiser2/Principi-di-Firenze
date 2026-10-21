@@ -45,7 +45,7 @@ func setup(cfg: Dictionary) -> void:
 	var side := "B" if opts.get("coop", false) else "A"
 	for i in n:
 		var s: Dictionary = seats[i]
-		var b: Dictionary = D.BOARD_B if side == "B" else D.BOARD_A
+		var b: Dictionary = D.board_info({"board": side, "color": s.get("color", D.COLORS[i]["id"])})
 		var grid := []
 		grid.resize(b["w"] * b["h"])
 		grid.fill("")
