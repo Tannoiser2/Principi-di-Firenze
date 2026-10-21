@@ -94,7 +94,7 @@ func expected_works(eng: PFEngine, s: int) -> float:
 	return clampf(float(r) * 0.9, 0.0, float(cards) + float(r) * 0.6)
 
 
-## Potenziale di una Professione nel principato (senza Bonus)
+## Potenziale di una Mestiere nel principato (senza Bonus)
 func card_potential(eng: PFEngine, s: int, c: int) -> int:
 	var p: Dictionary = eng.st.players[s]
 	var pr: Dictionary = D.PROFS[c]
@@ -587,7 +587,7 @@ func _prepare(eng: PFEngine, s: int, m: Dictionary) -> Dictionary:
 	return best
 
 
-## Probabilità che pescando 5 Professioni ne esca una che si può giocare subito
+## Probabilità che pescando 5 Mestieri ne esca una che si può giocare subito
 func _draw_chance(eng: PFEngine, s: int) -> float:
 	var st: PFState = eng.st
 	var deck: Array = st.prof_deck

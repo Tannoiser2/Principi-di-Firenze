@@ -23,7 +23,8 @@ const PRINCES := {
 }
 
 const LANDS := ["bosco", "lago", "parco"]
-const LAND_NAME := {"bosco": "Bosco", "lago": "Lago", "parco": "Parco"}
+const LAND_NAME := {"bosco": "Foresta", "lago": "Lago", "parco": "Parco"}
+const LAND_PLURAL := {"bosco": "foreste", "lago": "laghi", "parco": "parchi"}
 const LAND_COUNT := 6
 const FREEDOMS := ["viaggio", "religione", "opinione"]
 const FREEDOM_NAME := {"viaggio": "Libertà di viaggio", "religione": "Libertà di religione", "opinione": "Libertà di opinione"}
@@ -59,40 +60,40 @@ const BUILDING_SIZE := {
 const SIZE_NAME := {"G": "grande", "M": "medio", "P": "piccolo"}
 const BUILDING_COPIES := 3
 
-## Professioni: numero stampato -> paesaggio, libertà, edificio
+## Mestieri: numero stampato -> paesaggio, libertà, edificio
 const PROFS := {
-	1: {"name": "Matematica", "en": "Mathematician", "land": "lago", "free": "religione", "bld": "universita"},
+	1: {"name": "Matematico", "en": "Mathematician", "land": "lago", "free": "religione", "bld": "universita"},
 	2: {"name": "Teologo", "en": "Theologian", "land": "parco", "free": "viaggio", "bld": "universita"},
-	3: {"name": "Filosofa", "en": "Philosopher", "land": "bosco", "free": "opinione", "bld": "universita"},
-	4: {"name": "Botanica", "en": "Botanist", "land": "parco", "free": "religione", "bld": "laboratorio"},
+	3: {"name": "Filosofo", "en": "Philosopher", "land": "bosco", "free": "opinione", "bld": "universita"},
+	4: {"name": "Botanico", "en": "Botanist", "land": "parco", "free": "religione", "bld": "laboratorio"},
 	5: {"name": "Alchimista", "en": "Alchemist", "land": "lago", "free": "opinione", "bld": "laboratorio"},
 	6: {"name": "Fisico", "en": "Physicist", "land": "bosco", "free": "viaggio", "bld": "laboratorio"},
 	7: {"name": "Orologiaio", "en": "Watchmaker", "land": "lago", "free": "viaggio", "bld": "bottega"},
-	8: {"name": "Orafa", "en": "Goldsmith", "land": "parco", "free": "opinione", "bld": "bottega"},
-	9: {"name": "Fonditrice di campane", "en": "Bell caster", "land": "bosco", "free": "religione", "bld": "bottega"},
-	10: {"name": "Cartografa", "en": "Cartographer", "land": "lago", "free": "religione", "bld": "biblioteca"},
+	8: {"name": "Orafo", "en": "Goldsmith", "land": "parco", "free": "opinione", "bld": "bottega"},
+	9: {"name": "Campanaro", "en": "Bell caster", "land": "bosco", "free": "religione", "bld": "bottega"},
+	10: {"name": "Cartografo", "en": "Cartographer", "land": "lago", "free": "religione", "bld": "biblioteca"},
 	11: {"name": "Giurista", "en": "Legal scholar", "land": "bosco", "free": "opinione", "bld": "biblioteca"},
 	12: {"name": "Coreografo", "en": "Choreographer", "land": "bosco", "free": "viaggio", "bld": "opera"},
 	13: {"name": "Compositore", "en": "Composer", "land": "lago", "free": "opinione", "bld": "opera"},
 	14: {"name": "Scultore", "en": "Sculptor", "land": "bosco", "free": "religione", "bld": "studio"},
 	15: {"name": "Pittore", "en": "Painter", "land": "lago", "free": "viaggio", "bld": "studio"},
 	16: {"name": "Farmacista", "en": "Pharmacist", "land": "parco", "free": "opinione", "bld": "ospedale"},
-	17: {"name": "Medica", "en": "Doctor", "land": "bosco", "free": "viaggio", "bld": "ospedale"},
+	17: {"name": "Medico", "en": "Doctor", "land": "bosco", "free": "viaggio", "bld": "ospedale"},
 	18: {"name": "Drammaturgo", "en": "Dramatist", "land": "parco", "free": "religione", "bld": "teatro"},
-	19: {"name": "Poetessa", "en": "Poet", "land": "lago", "free": "viaggio", "bld": "teatro"},
+	19: {"name": "Poeta", "en": "Poet", "land": "lago", "free": "viaggio", "bld": "teatro"},
 	20: {"name": "Astronomo", "en": "Astronomer", "land": "bosco", "free": "religione", "bld": "torre"},
-	21: {"name": "Organara", "en": "Organ builder", "land": "bosco", "free": "opinione", "bld": "cappella"},
+	21: {"name": "Organista", "en": "Organ builder", "land": "bosco", "free": "opinione", "bld": "cappella"},
 }
 
 ## Carte Bonus (B1..B20): aumentano il valore dell'opera
 const BONUS := {
 	1: "Ogni edificio: +1",
 	2: "Ogni edificio grande: +2",
-	3: "Ogni edificio medio e ogni bosco: +1",
+	3: "Ogni edificio medio e ogni foresta: +1",
 	4: "Ogni edificio piccolo e ogni paesaggio: +1",
 	5: "Ogni misura di edificio (grande, medio, piccolo): +2",
 	6: "Ogni paesaggio: +1",
-	7: "Ogni bosco: +2",
+	7: "Ogni foresta: +2",
 	8: "Ogni lago: +2",
 	9: "Ogni parco: +2",
 	10: "Ogni libertà: +2",
@@ -103,9 +104,9 @@ const BONUS := {
 	15: "Ogni carta Prestigio: +2",
 	16: "Ogni carta Prestigio e ogni libertà: +1",
 	17: "Ogni tipo di paesaggio: +2",
-	18: "Ogni categoria (parco, lago, bosco, giullare, costruttore, Prestigio, libertà): +1",
-	19: "Ogni carta Professione e Reclutamento in mano (esclusa quella giocata): +1",
-	20: "Ogni tua carta Professione e Reclutamento sul tavolo (compresa quella giocata): +1",
+	18: "Ogni categoria (foresta, lago, parco, giullare, costruttore, Prestigio, libertà): +1",
+	19: "Ogni carta Mestiere e Attrazione in mano (esclusa quella giocata): +1",
+	20: "Ogni tua carta Mestiere e Attrazione, in mano o sul tavolo: +1",
 }
 
 ## Carte Prestigio (P1..P14): punti a fine partita. full / tied (-1 = nessun pareggio)
@@ -115,7 +116,7 @@ const PRESTIGE := {
 	3: {"text": "Meno caselle vuote", "pts": 8, "tie": 4},
 	4: {"text": "Tutti e tre i tipi di paesaggio", "pts": 8, "tie": -1},
 	5: {"text": "Più paesaggi", "pts": 7, "tie": 4},
-	6: {"text": "Più boschi", "pts": 7, "tie": 4},
+	6: {"text": "Più foreste", "pts": 7, "tie": 4},
 	7: {"text": "Più laghi", "pts": 6, "tie": 3},
 	8: {"text": "Tutte e tre le libertà", "pts": 8, "tie": -1},
 	9: {"text": "4 edifici + 2 libertà + 4 opere", "pts": 6, "tie": -1},
@@ -129,8 +130,8 @@ const PRESTIGE := {
 ## Oggetti all'asta
 const OBJECTS := ["bosco", "lago", "parco", "prestigio", "reclutamento", "giullare", "costruttore"]
 const OBJECT_NAME := {
-	"bosco": "Bosco", "lago": "Lago", "parco": "Parco", "paesaggio": "Paesaggio", "prestigio": "Carta Prestigio",
-	"reclutamento": "Carta Reclutamento", "giullare": "Giullare", "costruttore": "Costruttore",
+	"bosco": "Foresta", "lago": "Lago", "parco": "Parco", "paesaggio": "Paesaggio", "prestigio": "Carta Prestigio",
+	"reclutamento": "Carta Attrazione", "giullare": "Giullare", "costruttore": "Costruttore",
 }
 const JESTERS := 7
 const BUILDERS := 6
@@ -174,7 +175,7 @@ const CHAR_TEXT := {
 	"mercante": "Quando vinci un'asta, prendi l'oggetto gratis; oppure guadagni 1 punto più 1 per ogni avversario con più punti di te.",
 	"musa": "Ogni opera che completi in questo round vale in più quanto il numero del round.",
 	"professore": "Prendi gratis una carta Bonus oppure una carta Prestigio.",
-	"principessa": "Completi un'opera senza carta Professione: ogni paesaggio +3, ogni edificio +2, ogni costruttore +2, ogni carta Professione/Reclutamento +1. Niente Bonus.",
+	"principessa": "Completi un'opera senza carta Mestiere: ogni paesaggio +3, ogni edificio +2, ogni costruttore +2, ogni carta Mestiere/Attrazione +1. Niente Bonus.",
 }
 const CHAR_BIDS := {"banchiere": [0, 5]}
 const CHAR_BIDS_DEFAULT := [3, 15]

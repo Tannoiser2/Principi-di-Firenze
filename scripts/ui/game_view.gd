@@ -306,7 +306,7 @@ func _player_tip(s: int) -> String:
 	else:
 		var t := []
 		for c in p["table"]:
-			t.append(D.PROFS[c]["name"] if c > 0 else "Reclutamento")
+			t.append(D.PROFS[c]["name"] if c > 0 else "Attrazione")
 		parts.append("Opere: " + (", ".join(t) if t.size() > 0 else "nessuna"))
 	parts.append("(clic: inquadra il principato)")
 	return "\n".join(parts)
@@ -355,7 +355,7 @@ func _refresh_hand() -> void:
 		var tip := "%s (%s)\nVuole: %s, %s, %s\nValore dell'opera ora: %d (minimo %d)" % [pr["name"], pr["en"], D.LAND_NAME[pr["land"]], D.FREEDOM_SHORT[pr["free"]], D.BUILDING_NAME[pr["bld"]], v, st.min_work()]
 		hand_box.add_child(_card_btn(UI.prof_tex(c), 118, tip, Callable(), str(v), v < st.min_work()))
 	for i in p["recruits"]:
-		hand_box.add_child(_card_btn(UI.tex("res://assets/cards/reclutamento.jpg"), 118, "Carta Reclutamento: si scambia con una carta Professione giocata da un avversario. Conta +1 per ogni opera."))
+		hand_box.add_child(_card_btn(UI.tex("res://assets/cards/reclutamento.jpg"), 118, "Carta Attrazione: si scambia con una carta Mestiere giocata da un avversario. Conta +1 per ogni opera."))
 	if p["bonus"].size() > 0:
 		hand_box.add_child(VSeparator.new())
 	for b in p["bonus"]:
@@ -396,9 +396,9 @@ func _refresh_auction() -> void:
 		lines.append("Banchiere: %s fiorini sopra" % UI.fl(st.banker_money))
 	else:
 		lines.append("[b]Rifornimenti[/b]")
-		lines.append("Boschi %d · Laghi %d · Parchi %d" % [st.supply["land"]["bosco"], st.supply["land"]["lago"], st.supply["land"]["parco"]])
-		lines.append("Giullari %d · Costruttori %d · Reclutamento %d" % [st.supply["giullare"], st.supply["costruttore"], st.supply["reclutamento"]])
-		lines.append("Mazzi: Professioni %d · Bonus %d · Prestigio %d" % [st.prof_deck.size(), st.bonus_deck.size(), st.prest_deck.size()])
+		lines.append("Foreste %d · Laghi %d · Parchi %d" % [st.supply["land"]["bosco"], st.supply["land"]["lago"], st.supply["land"]["parco"]])
+		lines.append("Giullari %d · Costruttori %d · Attrazione %d" % [st.supply["giullare"], st.supply["costruttore"], st.supply["reclutamento"]])
+		lines.append("Mazzi: Mestieri %d · Bonus %d · Prestigio %d" % [st.prof_deck.size(), st.bonus_deck.size(), st.prest_deck.size()])
 		var fr := []
 		for f in D.FREEDOMS:
 			fr.append("%s %d" % [D.FREEDOM_SHORT[f], st.supply["free"][f]])
@@ -550,7 +550,7 @@ func _on_decision(r: Dictionary) -> void:
 
 
 func _ui_draft(r: Dictionary) -> void:
-	_modal("Le tue prime carte Professione", "Tieni 3 carte: scegli quella da rimettere nel mazzo.")
+	_modal("Le tue prime carte Mestiere", "Tieni 3 carte: scegli quella da rimettere nel mazzo.")
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 22)
 	h.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -595,7 +595,7 @@ func _obj_tip(o: String) -> String:
 		"prestigio":
 			return "Peschi 5 carte Prestigio e ne tieni una: punti a fine partita."
 		"reclutamento":
-			return "Si scambia con una Professione giocata da un avversario; conta +1 in ogni opera."
+			return "Si scambia con una Mestiere giocata da un avversario; conta +1 in ogni opera."
 		"giullare":
 			return "+2 al valore di ogni tua opera."
 		"costruttore":
@@ -667,7 +667,7 @@ func _ui_place(r: Dictionary, cancel: bool, cb: Callable = Callable(), title := 
 func _ui_pick(who: String, r: Dictionary) -> void:
 	var st := eng.st
 	var s: int = r["seat"]
-	var names := {"prestigio": "Prestigio", "bonus": "Bonus", "prof": "Professione"}
+	var names := {"prestigio": "Prestigio", "bonus": "Bonus", "prof": "Mestiere"}
 	_modal("Scegli una carta %s" % names.get(r["kind"], ""), "Le altre tornano in fondo al mazzo.")
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 18)
@@ -695,7 +695,7 @@ func _ui_pick(who: String, r: Dictionary) -> void:
 
 
 func _ui_recruit(who: String, r: Dictionary) -> void:
-	_modal("Carta Reclutamento", "Prendi una carta Professione giocata da un avversario (al suo posto resta la carta Reclutamento), oppure tienila per dopo.")
+	_modal("Carta Attrazione", "Prendi una carta Mestiere giocata da un avversario (al suo posto resta la carta Attrazione), oppure tienila per dopo.")
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 14)
 	h.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -827,21 +827,21 @@ func _ui_action(who: String, r: Dictionary) -> void:
 	var left: int = m.get("left", 0)
 	_ask(who + "fase azioni: %s. Hai %s fiorini." % [("ti restano [b]%d[/b] azioni" % left) if left > 1 else ("ti resta [b]1[/b] azione" if left == 1 else "azioni finite"), UI.fl(p["money"])])
 	var h := _row()
-	var a_work := _btn(h, "Completa un'opera", func(): _ui_work(r), "primary", 0, "Gioca una carta Professione dalla mano (valore almeno %d)" % eng.st.min_work())
+	var a_work := _btn(h, "Completa un'opera", func(): _ui_work(r), "primary", 0, "Gioca una carta Mestiere dalla mano (valore almeno %d)" % eng.st.min_work())
 	a_work.disabled = not m.has("work")
 	var a_build := _btn(h, "Costruisci (%s)" % UI.fl(eng.st.build_cost(s)), func(): _ui_build(r), "lapis", 0, "Un edificio nel principato: +3 punti, +4 alle opere che lo vogliono")
 	a_build.disabled = not m.has("build")
 	var a_free := _btn(h, "Libertà (300)", func(): _ui_freedom(r), "lapis", 0, "Introduci una libertà: +3 alle opere che la vogliono")
 	a_free.disabled = not m.has("freedom")
 	var h2 := _row()
-	var a_prof := _btn(h2, "Carta Professione (300)", func(): _reply({"a": "prof"}), "plain", 0, "Peschi 5 carte Professione e ne tieni una (una volta per round)")
+	var a_prof := _btn(h2, "Carta Mestiere (300)", func(): _reply({"a": "prof"}), "plain", 0, "Peschi 5 carte Mestiere e ne tieni una (una volta per round)")
 	a_prof.disabled = not m.has("prof")
 	var a_bonus := _btn(h2, "Carta Bonus (300)", func(): _reply({"a": "bonus"}), "plain", 0, "Peschi 5 carte Bonus e ne tieni una")
 	a_bonus.disabled = not m.has("bonus")
 	_btn(h2, "Fine turno", func(): _reply({"a": "end"}), "dark")
 	var h3 := _row()
 	if m.has("recruit"):
-		_btn(h3, "Usa Reclutamento", func(): _ui_recruit_free(r), "plain", 0, "Azione gratuita")
+		_btn(h3, "Usa Attrazione", func(): _ui_recruit_free(r), "plain", 0, "Azione gratuita")
 	if m.has("sell"):
 		_btn(h3, "Cedi fama per fiorini", func(): _ui_sell(r), "plain", 0, "Ogni punto di fama vale 100 fiorini (azione gratuita)")
 	if m.has("cardinal"):
@@ -998,7 +998,7 @@ func _ui_freedom(r: Dictionary) -> void:
 
 
 func _ui_recruit_free(r: Dictionary) -> void:
-	_modal("Carta Reclutamento", "Prendi una carta Professione giocata da un avversario.")
+	_modal("Carta Attrazione", "Prendi una carta Mestiere giocata da un avversario.")
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 14)
 	h.alignment = BoxContainer.ALIGNMENT_CENTER

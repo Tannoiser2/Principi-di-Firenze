@@ -108,7 +108,7 @@ func _ready() -> void:
 	sv.add_theme_constant_override("separation", 8)
 	solo_box.add_child(sv)
 	sv.add_child(UI.title("Solitario contro Wolfgang", 30))
-	sv.add_child(UI.wrap("Tu contro Wolfgang, l'Automa: lui gioca con le sue carte e i dadi, con 2 o 3 casate fantasma che tengono solo carte Professione. Senza espansioni.", 20, 520, UI.INK2))
+	sv.add_child(UI.wrap("Tu contro Wolfgang, l'Automa: lui gioca con le sue carte e i dadi, con 2 o 3 casate fantasma che tengono solo carte Mestiere. Senza espansioni.", 20, 520, UI.INK2))
 	sv.add_child(_segmented("Casate fantasma", ["2 (4 giocatori)", "3 (5 giocatori)"], solo_dummies - 2, func(i): solo_dummies = i + 2))
 	sv.add_child(_segmented("Wolfgang", ["Facile", "Standard", "Difficile"], solo_diff, func(i): solo_diff = i))
 	var b_solo := _big("Sfida Wolfgang", 400)

@@ -415,7 +415,7 @@ func place_land(s: int, lid: String, pl: Dictionary) -> int:
 	p["land"][lid] += 1
 	supply["land"][lid] -= 1
 	if pts > 0:
-		add_fame(s, pts, "un altro %s" % D.LAND_NAME[lid].to_lower())
+		add_fame(s, pts, "%s in più" % D.LAND_NAME[lid].to_lower())
 	return pts
 
 
@@ -488,7 +488,7 @@ func works(s: int) -> int:
 	return p["table"].size()
 
 
-## Carte Professione e Reclutamento in mano e sul tavolo (per il valore dell'opera)
+## Carte Mestiere e Attrazione in mano e sul tavolo (per il valore dell'opera)
 func card_count(s: int) -> int:
 	var p: Dictionary = players[s]
 	return p["hand"].size() + p["recruits"] + p["table"].size()
@@ -498,7 +498,7 @@ func n_freedoms(s: int) -> int:
 	return players[s]["freedoms"].size()
 
 
-## Valore di una carta Bonus giocata con l'opera (played = una Professione appena giocata)
+## Valore di una carta Bonus giocata con l'opera (played = una Mestiere appena giocata)
 func bonus_value(s: int, b: int, played := true) -> int:
 	var p: Dictionary = players[s]
 	match b:
@@ -543,12 +543,12 @@ func bonus_value(s: int, b: int, played := true) -> int:
 			return maxi(0, p["hand"].size() - (1 if played else 0)) + p["recruits"]
 		20:
 			if p["wolf"]:
-				return works(s) + 1
-			return p["table"].size() + (1 if played else 0)
+				return p["row"].size()
+			return card_count(s)
 	return 0
 
 
-## Valore dell'opera con la Professione card (o con la Principessa se card == -1).
+## Valore dell'opera con la Mestiere card (o con la Principessa se card == -1).
 func work_value(s: int, card: int, bonuses: Array = [], muse_round := 0) -> int:
 	var p: Dictionary = players[s]
 	var v := 0
@@ -578,14 +578,14 @@ func work_breakdown(s: int, card: int, bonuses: Array = [], muse_round := 0) -> 
 		out.append(["Paesaggi ×3", 3 * n_lands(s)])
 		out.append(["Edifici ×2", 2 * n_buildings(s)])
 		out.append(["Costruttori ×2", 2 * p["builders"]])
-		out.append(["Carte Professione/Reclutamento", card_count(s)])
+		out.append(["Carte Mestiere/Attrazione", card_count(s)])
 	else:
 		var pr: Dictionary = D.PROFS[card]
 		out.append([D.LAND_NAME[pr["land"]], 3 if p["land"][pr["land"]] > 0 else 0])
 		out.append([D.FREEDOM_SHORT[pr["free"]], 3 if pr["free"] in p["freedoms"] else 0])
 		out.append([D.BUILDING_NAME[pr["bld"]], 4 if pr["bld"] in p["buildings"] else 0])
 		out.append(["Giullari ×2", 2 * p["jesters"]])
-		out.append(["Carte Professione/Reclutamento", card_count(s)])
+		out.append(["Carte Mestiere/Attrazione", card_count(s)])
 		for b in bonuses:
 			out.append(["Bonus B%d" % int(b), bonus_value(s, int(b), true)])
 	if muse_round > 0:
@@ -660,7 +660,7 @@ func fame_track(s: int) -> int:
 
 # ================================================================== Wolfgang
 
-## Carte coperte nella fila di Wolfgang (Professioni e Reclutamento)
+## Carte coperte nella fila di Wolfgang (Mestieri e Attrazione)
 func wolf_down(s: int) -> Array:
 	var out := []
 	var row: Array = players[s]["row"]
@@ -678,7 +678,7 @@ func wolf_down_prof(s: int) -> int:
 	return -1
 
 
-## Valore dell'opera di Wolfgang: minimo del round + giullari + carte Reclutamento + Bonus sulla carta
+## Valore dell'opera di Wolfgang: minimo del round + giullari + carte Attrazione + Bonus sulla carta
 func wolf_work_value(s: int, idx: int) -> int:
 	var p: Dictionary = players[s]
 	var v: int = min_work() + 2 * int(p["jesters"])

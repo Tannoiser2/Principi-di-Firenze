@@ -11,7 +11,7 @@ SH = {
  "universita": ["##.", "###", ".##"], "laboratorio": ["##.", "###", "#.#"], "bottega": ["###", "###", "..#"],
  "biblioteca": [".#.", "###", "#.."], "opera": ["###", "#..", "#.."], "studio": ["###", "#.#"],
  "ospedale": ["..#", "###", "#.."], "teatro": [".###", "##.."], "torre": ["#.", "##"], "cappella": ["#", "#", "#"],
- "bosco": [".##", "###"], "lago": ["##", "##"], "parco": ["#", "#", "#"]}
+ "bosco": [".##", "###"], "palazzo": ["###", "###"], "lago": ["##", "##"], "parco": ["#", "#", "#"]}
 
 def cells(nm):
     return {(x, y) for y, row in enumerate(SH[nm]) for x, ch in enumerate(row) if ch == '#'}
@@ -41,7 +41,7 @@ def fit(nm, cut_frac=None, report=True):
     img = m.visual.material.baseColorTexture.convert('RGB')
     W0 = len(SH[nm][0]); H0 = len(SH[nm])
     y = V[:, 1]; ymin, ymax = y.min(), y.max(); hgt = ymax - ymin
-    CUT = {'universita': 0.12}
+    CUT = {'universita': 0.06}
     base_cut = ymin + (cut_frac if cut_frac is not None else CUT.get(nm, 0.06)) * hgt
     low = F[(y[F].max(1) <= ymin + 0.3 * hgt)]
     best = None
@@ -64,7 +64,7 @@ def fit(nm, cut_frac=None, report=True):
             if best is None or score > best[0]:
                 best = (score, rot, mirror, iou, asp)
     _, rot, mirror, iou, asp = best
-    FORCE = {'torre': (3, False)}
+    FORCE = {'torre': (0, False), 'palazzo': (0, False), 'universita': (3, True)}
     if nm in FORCE:
         rot, mirror = FORCE[nm]
     P = transform(V, rot, mirror)

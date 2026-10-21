@@ -134,7 +134,7 @@ func run() -> void:
 	await _final()
 
 
-## Ognuno riceve 4 Professioni e ne tiene 3.
+## Ognuno riceve 4 Mestieri e ne tiene 3.
 func _draft() -> void:
 	st.phase = "preparazione"
 	var deals := {}
@@ -159,7 +159,7 @@ func _draft() -> void:
 		st.players[s]["hand"] = cards
 		st.prof_deck.append(int(r))
 	st._shuffle(st.prof_deck)
-	say("Ognuno tiene 3 carte Professione.")
+	say("Ognuno tiene 3 carte Mestiere.")
 
 
 # ================================================================== asta
@@ -421,12 +421,12 @@ func _place_land(s: int, lid: String) -> void:
 		else:
 			pl = ais[s].best_place(self, s, "l", lid)
 	st.place_land(s, lid, pl)
-	say("%s mette un %s nel principato." % [pname(s), D.LAND_NAME[lid].to_lower()])
+	say("%s mette %s nel principato." % [pname(s), ("una foresta" if lid == "bosco" else "un " + D.LAND_NAME[lid].to_lower())])
 	fx.emit("placed", {"seat": s, "id": lid})
 	_sync()
 
 
-## Pesca fino a 5 carte (Prestigio, Bonus, Professione), ne tiene una, le altre vanno in fondo.
+## Pesca fino a 5 carte (Prestigio, Bonus, Mestiere), ne tiene una, le altre vanno in fondo.
 func _pick_card(s: int, kind: String) -> void:
 	var deck: Array = st.prest_deck if kind == "prestigio" else (st.bonus_deck if kind == "bonus" else st.prof_deck)
 	var drawn := []
@@ -449,11 +449,11 @@ func _pick_card(s: int, kind: String) -> void:
 			say("%s prende una carta Bonus." % pname(s))
 		_:
 			p["hand"].append(int(r))
-			say("%s prende una carta Professione." % pname(s))
+			say("%s prende una carta Mestiere." % pname(s))
 	_sync()
 
 
-## Bersagli possibili per una carta Reclutamento: [[posto, indice, professione], ...]
+## Bersagli possibili per una carta Attrazione: [[posto, indice, professione], ...]
 func recruit_targets(s: int) -> Array:
 	var out := []
 	for o in n:
@@ -514,7 +514,7 @@ func use_recruit(s: int, o: int, idx: int) -> bool:
 			q["table"][idx] = 0
 	p["recruits"] -= 1
 	p["hand"].append(c)
-	say("%s usa una carta Reclutamento e prende %s%s." % [pname(s), D.PROFS[c]["name"], (" da " + pname(o)) if o >= 0 else ""])
+	say("%s usa una carta Attrazione e prende %s%s." % [pname(s), D.PROFS[c]["name"], (" da " + pname(o)) if o >= 0 else ""])
 	fx.emit("recruit", {"seat": s, "from": o})
 	_sync()
 	return true
@@ -622,7 +622,7 @@ func _solo_auction() -> void:
 	await _wolf_buys(bought)
 	if bought != "reclutamento" and auction["won"].get(w, "") != "reclutamento" and st.supply["reclutamento"] > 0:
 		st.supply["reclutamento"] -= 1
-		say("Si scarta una carta Reclutamento.")
+		say("Si scarta una carta Attrazione.")
 	if bought != "costruttore" and auction["won"].get(w, "") != "costruttore" and st.supply["costruttore"] > 0:
 		st.supply["costruttore"] -= 1
 		say("Si scarta un costruttore.")
@@ -1123,7 +1123,7 @@ func _wolf_do(w: int, act: String) -> void:
 			for col in st.solo["dummies"]:
 				if st.prof_deck.size() > 0:
 					col.append({"c": st.prof_deck.pop_front(), "up": false})
-			say("Wolfgang prende una carta Professione.")
+			say("Wolfgang prende una carta Mestiere.")
 		"freedom":
 			var i2 := st.wolf_down_prof(w)
 			var f: String = D.PROFS[p["row"][i2]["c"]]["free"]
