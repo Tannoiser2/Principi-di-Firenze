@@ -16,12 +16,6 @@ const CW := 6.6                          # larghezza della plancia del giocatore
 const CH := CW * 723.0 / 1400.0
 const TOP := 0.06
 
-## orientamento dei modelli rispetto alla tessera (gradi attorno all'asse verticale)
-const MODEL_YAW := {
-	"universita": 0.0, "laboratorio": 0.0, "bottega": 90.0, "biblioteca": 0.0, "opera": 0.0, "studio": 0.0,
-	"ospedale": 0.0, "teatro": 0.0, "torre": 90.0, "cappella": 0.0, "bosco": 180.0, "lago": 90.0, "parco": 90.0,
-}
-
 var eng: PFEngine
 var st: PFState
 var cam: Camera3D
@@ -494,13 +488,55 @@ static func shape_map(id: String, r: int, f: bool) -> Dictionary:
 	return {"w0": w0, "h0": h0, "center": center, "rot": -PI / 2.0 * posmod(r, 4), "flip": f}
 
 
+const THICK := 0.075                    # spessore delle tessere (cartoncino di 2-3 mm)
+const SUPPLY_CELL := 0.825                # casella delle sagome stampate sul tabellone
+
+
+## Tessera di cartone con lo spessore: una colonnina per casella e l'illustrazione sopra.
+## parent ha l'origine al centro del riquadro della sagoma (orientamento della tessera, r=0).
+func _cardboard(id: String, c: float, count: int, parent: Node3D, with_model := false) -> void:
+	var rows: Array = D.SHAPES[id]
+	var w0 := float(rows[0].length())
+	var h0 := float(rows.size())
+	var hgt := THICK * maxi(1, count)
+	var key := "box%.3f_%.3f" % [c, hgt]
+	if not meshes.has(key):
+		var bm := BoxMesh.new()
+		bm.size = Vector3(c * 0.97, hgt, c * 0.97)
+		meshes[key] = bm
+	var side := _mat(Color("#9c8463"), 0.9)
+	for y in rows.size():
+		var row: String = rows[y]
+		for x in row.length():
+			if row[x] != "#":
+				continue
+			var b := MeshInstance3D.new()
+			b.mesh = meshes[key]
+			b.material_override = side
+			b.position = Vector3((x + 0.5 - w0 / 2.0) * c, hgt / 2.0, (y + 0.5 - h0 / 2.0) * c)
+			parent.add_child(b)
+	var q := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(w0 * c, h0 * c)
+	q.mesh = pm
+	q.material_override = _tex_mat("res://assets/tiles/%s.png" % id, true)
+	q.position.y = hgt + 0.002
+	parent.add_child(q)
+	if with_model and show_models:
+		var model := _model(id)
+		if model != null:
+			model.scale = Vector3(c, c, c)
+			model.position.y = hgt + 0.003
+			parent.add_child(model)
+
+
 func _piece(s: int, pc: Dictionary) -> void:
 	var info := grid_info(s)
 	var c: float = info["c"]
 	var o: Vector3 = info["o"]
 	var id: String = pc["id"]
 	var mp := shape_map(id, int(pc["r"]), bool(pc["f"]))
-	var center := Vector3(o.x + (float(pc["x"]) + mp["center"].x) * c, o.y + 0.012, o.z + (float(pc["y"]) + mp["center"].y) * c)
+	var center := Vector3(o.x + (float(pc["x"]) + mp["center"].x) * c, o.y + 0.002, o.z + (float(pc["y"]) + mp["center"].y) * c)
 	var holder := Node3D.new()
 	holder.position = center
 	holder.rotation.y = mp["rot"]
@@ -509,16 +545,7 @@ func _piece(s: int, pc: Dictionary) -> void:
 	if mp["flip"]:
 		inner.scale = Vector3(-1, 1, 1)
 	holder.add_child(inner)
-	var q := MeshInstance3D.new()
-	var pm := PlaneMesh.new()
-	pm.size = Vector2(mp["w0"] * c * 0.985, mp["h0"] * c * 0.985)
-	q.mesh = pm
-	q.material_override = _tex_mat("res://assets/tiles/%s.png" % id, true)
-	inner.add_child(q)
-	if show_models:
-		var model := _model(id)
-		if model != null:
-			inner.add_child(_fit_model(model, id, mp["w0"] * c, mp["h0"] * c))
+	_cardboard(id, c, 1, inner, true)
 
 
 func _model(id: String) -> Node3D:
@@ -529,26 +556,6 @@ func _model(id: String) -> Node3D:
 	if ps == null:
 		return null
 	return (ps as PackedScene).instantiate()
-
-
-## Adatta il modello all'impronta della tessera (w x h) e lo appoggia sopra
-func _fit_model(model: Node3D, id: String, w: float, h: float) -> Node3D:
-	var aabb := _aabb(model, Transform3D.IDENTITY)
-	if aabb.size.x <= 0.0001:
-		return model
-	var yawd: float = MODEL_YAW.get(id, 0.0)
-	var swap: bool = int(round(yawd / 90.0)) % 2 != 0
-	var ax := aabb.size.z if swap else aabb.size.x
-	var az := aabb.size.x if swap else aabb.size.z
-	var k := minf(w / ax, h / az) * 0.96
-	var piv := Node3D.new()
-	model.position = -Vector3(aabb.position.x + aabb.size.x / 2.0, aabb.position.y, aabb.position.z + aabb.size.z / 2.0)
-	var spin := Node3D.new()
-	spin.rotation.y = deg_to_rad(yawd)
-	spin.scale = Vector3(k, k, k)
-	spin.add_child(model)
-	piv.add_child(spin)
-	return piv
 
 
 func _aabb(n: Node, xf: Transform3D) -> AABB:
@@ -591,35 +598,58 @@ func _bp(key: String) -> Vector3:
 	return board_point(D.BOARD_POS[key])
 
 
+## Pila sul tabellone: tessere di cartone sulla sagoma stampata (con il modello in cima in 3D)
+func _supply_stack(id: String, count: int) -> void:
+	if count <= 0:
+		return
+	var holder := Node3D.new()
+	holder.position = _bp(id)
+	holder.rotation.y = -PI / 2.0 * int(D.BOARD_ROT.get(id, 0))
+	dyn.add_child(holder)
+	_cardboard(id, SUPPLY_CELL, count, holder, true)
+	if count > 1:
+		var rows: Array = D.SHAPES[id]
+		var lab := _label("×%d" % count, Vector3.ZERO, 64)
+		lab.reparent(holder, false)
+		lab.position = Vector3(rows[0].length() * SUPPLY_CELL / 2.0 + 0.05, THICK * count + 0.05, rows.size() * SUPPLY_CELL / 2.0 - 0.2)
+
+
+## Pila di tessere rettangolari (libertà) o di carte, appoggiata sul tabellone
+func _flat_stack(path: String, w: float, h: float, pos: Vector3, count: int, thick: float, edge := Color("#e8dcc0")) -> void:
+	if count <= 0:
+		return
+	var hgt := thick * count
+	var box := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(w * 0.99, hgt, h * 0.99)
+	box.mesh = bm
+	box.material_override = _mat(edge)
+	box.position = pos + Vector3(0, hgt / 2.0, 0)
+	dyn.add_child(box)
+	_quad(path, w, h, pos + Vector3(0, hgt + 0.002, 0))
+	if count > 1:
+		_label("×%d" % count, pos + Vector3(w / 2.0 + 0.05, hgt + 0.05, h / 2.0 - 0.15), 64)
+
+
+## Gettone quadrato di cartone (costruttore)
+func _square_token(path: String, pos: Vector3, size: float, count := 1) -> void:
+	_flat_stack(path, size, size, pos, count, THICK, Color("#9c8463"))
+
+
 func _refresh_supply() -> void:
-	var cell := 0.9
-	# paesaggi
 	for l in D.LANDS:
-		var rows: Array = D.SHAPES[l]
-		_stack("res://assets/tiles/%s.png" % l, float(rows[0].length()) * cell, float(rows.size()) * cell, _bp(l), st.supply["land"][l], 0.05, true)
-	# edifici
+		_supply_stack(l, st.supply["land"][l])
 	for b in D.BUILDINGS:
-		var rows2: Array = D.SHAPES[b]
-		var cnt: int = st.supply["bld"][b]
-		if cnt <= 0:
-			continue
-		var w: float = rows2[0].length() * cell * 0.8
-		var h: float = rows2.size() * cell * 0.8
-		_stack("res://assets/tiles/%s.png" % b, w, h, _bp(b), cnt, 0.05, true)
-	# libertà
+		_supply_stack(b, st.supply["bld"][b])
 	for f in D.FREEDOMS:
-		var cnt2: int = st.supply["free"][f]
-		if cnt2 > 0:
-			_stack("res://assets/tiles/liberta_%s.jpg" % f, 2.0, 0.85, _bp(f), cnt2, 0.04)
-	# carte e gettoni
-	_stack("res://assets/cards/dorso_prestigio.jpg", 1.9, 2.65, _bp("prestigio"), st.prest_deck.size(), 0.012)
-	_stack("res://assets/cards/reclutamento.jpg", 1.9, 2.65, _bp("reclutamento"), st.supply["reclutamento"], 0.012)
-	_stack("res://assets/cards/dorso_bonus.jpg", 2.1, 2.9, _bp("bonus"), st.bonus_deck.size(), 0.01)
-	_stack("res://assets/cards/dorso_professioni.jpg", 2.1, 2.9, _bp("professioni"), st.prof_deck.size(), 0.01)
-	for i in st.supply["costruttore"]:
-		_disc(_bp("costruttore") + Vector3(0, i * 0.06, 0), Color("#6b4a2b"), 0.42, 0.06, "res://assets/tokens/costruttore.jpg" if i == st.supply["costruttore"] - 1 else "")
+		_flat_stack("res://assets/tiles/liberta_%s.jpg" % f, 2.0, 0.85, _bp(f), st.supply["free"][f], THICK, Color("#9c8463"))
+	_flat_stack("res://assets/cards/dorso_prestigio.jpg", 2.6, 3.65, _bp("prestigio"), st.prest_deck.size(), 0.012)
+	_flat_stack("res://assets/cards/reclutamento.jpg", 2.6, 3.65, _bp("reclutamento"), st.supply["reclutamento"], 0.012)
+	_flat_stack("res://assets/cards/dorso_bonus.jpg", 2.6, 3.65, _bp("bonus"), st.bonus_deck.size(), 0.01)
+	_flat_stack("res://assets/cards/dorso_professioni.jpg", 2.6, 3.65, _bp("professioni"), st.prof_deck.size(), 0.01)
+	_square_token("res://assets/tokens/costruttore.jpg", _bp("costruttore"), 0.82, st.supply["costruttore"])
 	for i in st.supply["giullare"]:
-		_disc(_bp("giullare") + Vector3(0, i * 0.06, 0), Color("#6b4a2b"), 0.42, 0.06, "res://assets/tokens/giullare.jpg" if i == st.supply["giullare"] - 1 else "")
+		_disc(_bp("giullare") + Vector3(0, i * THICK, 0), Color("#9c8463"), 0.38, THICK, "res://assets/tokens/giullare.jpg" if i == st.supply["giullare"] - 1 else "")
 	# pedine dell'asta sulle pile già assegnate
 	var au: Dictionary = eng.auction
 	if au.has("won"):
@@ -664,18 +694,19 @@ func _refresh_player(s: int) -> void:
 	var cp: Vector3 = plancia_pos[s]
 	var ox := cp.x - CW / 2.0
 	var oz := cp.z - CH / 2.0
-	var rows := [0.215, 0.5, 0.775]
+	# caselle stampate sulla plancia (misurate sull'immagine)
+	var rows := [0.14, 0.378, 0.606]
 	var fslot := {"viaggio": 0, "opinione": 1, "religione": 2}
 	var used := {}
 	for f in p["freedoms"]:
 		var r: int = fslot[f]
 		var k: int = used.get(r, 0)
 		used[r] = k + 1
-		_quad("res://assets/tiles/liberta_%s.jpg" % f, CW * 0.17, CH * 0.2, Vector3(ox + CW * 0.538 + k * 0.15, TOP + 0.01 + k * 0.01, oz + CH * rows[r]))
+		_flat_stack("res://assets/tiles/liberta_%s.jpg" % f, CW * 0.2286, CH * 0.186, Vector3(ox + CW * 0.585 + k * 0.12, TOP + k * THICK, oz + CH * rows[r]), 1, THICK, Color("#9c8463"))
 	for i in mini(3, int(p["builders"])):
-		_disc(Vector3(ox + CW * 0.747, TOP, oz + CH * [0.18, 0.43, 0.68][i]), Color("#6b4a2b"), 0.36, 0.05, "res://assets/tokens/costruttore.jpg")
+		_square_token("res://assets/tokens/costruttore.jpg", Vector3(ox + CW * 0.798, TOP, oz + CH * [0.139, 0.371, 0.603][i]), CW * 0.095)
 	for i in int(p["jesters"]):
-		_disc(Vector3(ox + CW * (0.5 + 0.075 * i), TOP + 0.01 * i, oz + CH * 0.86), Color("#6b4a2b"), 0.3, 0.05, "res://assets/tokens/giullare.jpg")
+		_disc(Vector3(ox + CW * (0.5 + 0.075 * i), TOP, oz + CH * 0.86), Color("#9c8463"), 0.27, THICK, "res://assets/tokens/giullare.jpg")
 	# disco 50/100
 	var laps := int(p["fame"]) / 50
 	if laps >= 1:

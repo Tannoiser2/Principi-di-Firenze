@@ -186,16 +186,20 @@ const BOARD_A := {"w": 7, "h": 7, "palazzo": [Vector2i(0, 5), Vector2i(1, 5), Ve
 const BOARD_B := {"w": 10, "h": 5, "palazzo": [Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 4)],
 	"img": "res://assets/board/principato_b.jpg", "img_w": 2048, "img_h": 1635, "x0": 4.0, "y0": 4.0, "cell": 204.2}
 
-## Posizioni sul tabellone (frazioni dell'immagine 8500x4204)
+## Posizioni sul tabellone (frazioni dell'immagine 8500x4204), misurate confrontando le tessere
+## con le sagome stampate (tools/misura_tabellone.py)
 const BOARD_POS := {
-	"bosco": Vector2(0.325, 0.515), "lago": Vector2(0.216, 0.515), "parco": Vector2(0.097, 0.53),
-	"prestigio": Vector2(0.122, 0.73), "reclutamento": Vector2(0.226, 0.73), "costruttore": Vector2(0.341, 0.667), "giullare": Vector2(0.341, 0.843),
-	"universita": Vector2(0.759, 0.228), "laboratorio": Vector2(0.632, 0.228), "bottega": Vector2(0.5, 0.228),
-	"biblioteca": Vector2(0.513, 0.468), "opera": Vector2(0.635, 0.468), "ospedale": Vector2(0.759, 0.468),
-	"studio": Vector2(0.513, 0.66), "teatro": Vector2(0.663, 0.66), "cappella": Vector2(0.481, 0.875), "torre": Vector2(0.55, 0.875),
-	"viaggio": Vector2(0.662, 0.9), "opinione": Vector2(0.763, 0.9), "religione": Vector2(0.866, 0.9),
-	"bonus": Vector2(0.884, 0.24), "professioni": Vector2(0.884, 0.607),
+	"bosco": Vector2(0.3312, 0.5086), "lago": Vector2(0.2256, 0.5086), "parco": Vector2(0.1209, 0.542),
+	"prestigio": Vector2(0.1239, 0.7969), "reclutamento": Vector2(0.2473, 0.7969),
+	"costruttore": Vector2(0.3449, 0.679), "giullare": Vector2(0.3455, 0.8494),
+	"universita": Vector2(0.7613, 0.229), "laboratorio": Vector2(0.6377, 0.229), "bottega": Vector2(0.5137, 0.2315),
+	"biblioteca": Vector2(0.514, 0.4648), "opera": Vector2(0.7616, 0.4642), "ospedale": Vector2(0.6386, 0.4654),
+	"studio": Vector2(0.5143, 0.6648), "teatro": Vector2(0.6563, 0.6636), "cappella": Vector2(0.4811, 0.8654), "torre": Vector2(0.551, 0.8673),
+	"viaggio": Vector2(0.6636, 0.9), "opinione": Vector2(0.7772, 0.9012), "religione": Vector2(0.8913, 0.9),
+	"bonus": Vector2(0.8889, 0.271), "professioni": Vector2(0.8901, 0.6105),
 }
+## Sagome stampate ruotate (quarti di giro orari)
+const BOARD_ROT := {"parco": 3}
 
 ## Casella della traccia della fama (0..49) sul tabellone, in frazioni
 static func fame_pos(i: int) -> Vector2:

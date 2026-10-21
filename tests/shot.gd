@@ -67,6 +67,16 @@ func _init() -> void:
 			for i in 30:
 				await process_frame
 			await snap("06_principato")
+			g.board.focus_board()
+			g.board._dist_t = 17.0
+			g.board._focus_t = Vector3(4, 0, 1)
+			for i in 30:
+				await process_frame
+			await snap("13_tabellone_edifici")
+			g.board._focus_t = Vector3(-6, 0, 2)
+			for i in 30:
+				await process_frame
+			await snap("14_tabellone_paesaggi")
 			g.board.reset_view()
 			var m: Dictionary = r["menu"]
 			if m.has("build"):
